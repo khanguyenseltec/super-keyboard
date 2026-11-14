@@ -1,44 +1,142 @@
 # Super Keyboard: the built-in developer layout.
 #
-# Key notation (see crates/core/src/action.rs):
+# A layout is made of sections: named blocks of rows. Layers list the sections
+# they show. Profiles (in settings.toml, or the app's settings screen) switch
+# sections on and off and reorder them; see docs/CUSTOMIZING.md.
+#
+#   [[sections]]
+#   name = "number-row"        letters, digits, `-` and `_`; profiles refer to it by this
+#   title = "Number row"       what the settings screen calls it (default: the name)
+#   enabled = false            off unless a profile turns it on (default: true)
+#   required = true            can never be turned off (default: false)
+#   rows = [[...], [...]]
+#
+#   [[layers]]
+#   name = "base"              the first layer is the one shown at start
+#   sections = ["number-row", "letters", "bottom"]   in the order they are declared
+#
+# A layer can list `rows = [...]` instead of `sections`, for layouts that do not
+# need sections.
+#
+# Key notation (see crates/core/src/action/mod.rs):
 #   "a", "->", "::"          insert that text
 #   "<esc>", "<f5>", "<up>"  press a named key
 #   "<ctrl>", "<shift>"      one-shot modifier (tap twice to lock, three times to release)
 #   "<layer:sym>"            switch to a layer (tap again to go back to the first layer)
-#   { tap = "<space>", width = 3.0 }        set a relative key width
-#   { text = "<div>", label = "div" }       literal text that looks like a key name
+#
+# The table form adds options to a key:
+#   { tap = "<space>", width = 3.0 }        relative key width (a normal key is 1.0)
+#   { text = "<div>", label = "div" }       literal text that looks like a key name, and a label
+#   { tap = ".", hold = ".." }              long-press action, same notation as `tap`
+#   { tap = "<space>", swipe = "cursor" }   drag sideways to move the cursor (Shift selects)
+#   { tap = "<bksp>", repeat = false }      Backspace, Delete and the arrows repeat while
+#                                           held unless `repeat = false`; any other key can
+#                                           opt in with `repeat = true`. A key that repeats
+#                                           cannot also have `hold` or `swipe`.
 #
 # TOML literal strings ('...') avoid escaping for '\' and '"'.
+#
+# Your own layouts go in ~/.config/super-keyboard/layouts/*.toml; a file called
+# dev.toml there replaces this one.
 
 name = "dev"
 description = "Brackets and Esc/Tab on the base layer; symbols, operators, navigation and F-keys one tap away."
 
+# ---- Base layer ----------------------------------------------------------
+
+[[sections]]
+name = "number-row"
+title = "Number row"
+enabled = false
+rows = [["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]]
+
+[[sections]]
+name = "terminal"
+title = "Terminal keys: Esc, Tab, pipes, paths, arrows"
+enabled = false
+rows = [["<esc>", "<tab>", "~", "|", "/", "-", "<left>", "<down>", "<up>", "<right>"]]
+
+[[sections]]
+name = "brackets"
+title = "Esc, Tab, brackets and ; :"
+rows = [["<esc>", "<tab>", "(", ")", "{", "}", "[", "]", ";", ":"]]
+
+[[sections]]
+name = "letters"
+title = "Letters"
+required = true
+rows = [
+    [
+        { tap = "q", hold = "1" }, { tap = "w", hold = "2" }, { tap = "e", hold = "3" },
+        { tap = "r", hold = "4" }, { tap = "t", hold = "5" }, { tap = "y", hold = "6" },
+        { tap = "u", hold = "7" }, { tap = "i", hold = "8" }, { tap = "o", hold = "9" },
+        { tap = "p", hold = "0" },
+    ],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l", { tap = "_", hold = "-" }],
+    [{ tap = "<shift>", width = 1.5 }, "z", "x", "c", "v", "b", "n", "m", { tap = "<bksp>", width = 1.5 }],
+]
+
+# ---- Symbol layer --------------------------------------------------------
+
+[[sections]]
+name = "digits"
+title = "Digits"
+rows = [["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]]
+
+[[sections]]
+name = "symbols"
+title = "Symbols"
+required = true
+rows = [
+    ["!", "@", "#", "$", "%", "^", "&", "*", "-", "="],
+    ['`', '~', '|', '\', "'", '"', "<", ">", { tap = "/", hold = "//" }, "?"],
+]
+
+[[sections]]
+name = "operators"
+title = "Operators: -> => :: != == && ||"
+rows = [[{ tap = "<shift>", width = 1.5 }, "->", "=>", "::", "!=", "==", "&&", "||", { tap = "<bksp>", width = 1.5 }]]
+
+# ---- Navigation layer ----------------------------------------------------
+
+[[sections]]
+name = "function-keys"
+title = "F1 to F12"
+rows = [["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>", "<f9>", "<f10>", "<f11>", "<f12>"]]
+
+[[sections]]
+name = "cursor-keys"
+title = "Cursor and editing keys"
+required = true
+rows = [
+    ["<esc>", "<ins>", "<home>", "<up>", "<end>", "<pgup>"],
+    ["<tab>", "<del>", "<left>", "<down>", "<right>", "<pgdn>"],
+]
+
+[[sections]]
+name = "paths"
+title = "Shift, Super and shell paths"
+rows = [[{ tap = "<shift>", width = 1.5 }, "<super>", "./", "../", "~/", "$(", "${", { tap = "<bksp>", width = 1.5 }]]
+
+# ---- Every layer ---------------------------------------------------------
+
+[[sections]]
+name = "bottom"
+title = "Space bar, modifiers and layer keys"
+required = true
+rows = [[
+    "<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0, swipe = "cursor" },
+    ",", { tap = ".", hold = ".." }, "<layer:nav>", "<enter>",
+]]
+
 [[layers]]
 name = "base"
-rows = [
-    ["<esc>", "<tab>", "(", ")", "{", "}", "[", "]", ";", ":"],
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l", "_"],
-    [{ tap = "<shift>", width = 1.5 }, "z", "x", "c", "v", "b", "n", "m", { tap = "<bksp>", width = 1.5 }],
-    ["<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0 }, ",", ".", "<layer:nav>", "<enter>"],
-]
+sections = ["number-row", "terminal", "brackets", "letters", "bottom"]
 
 [[layers]]
 name = "sym"
-rows = [
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["!", "@", "#", "$", "%", "^", "&", "*", "-", "="],
-    ['`', '~', '|', '\', "'", '"', "<", ">", "/", "?"],
-    [{ tap = "<shift>", width = 1.5 }, "->", "=>", "::", "!=", "==", "&&", "||", { tap = "<bksp>", width = 1.5 }],
-    ["<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0 }, ",", ".", "<layer:nav>", "<enter>"],
-]
+sections = ["digits", "symbols", "operators", "bottom"]
 
 [[layers]]
 name = "nav"
-rows = [
-    ["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>", "<f9>", "<f10>", "<f11>", "<f12>"],
-    ["<esc>", "<ins>", "<home>", "<up>", "<end>", "<pgup>"],
-    ["<tab>", "<del>", "<left>", "<down>", "<right>", "<pgdn>"],
-    [{ tap = "<shift>", width = 1.5 }, "<super>", "./", "../", "~/", "$(", "${", { tap = "<bksp>", width = 1.5 }],
-    ["<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0 }, ",", ".", "<layer:nav>", "<enter>"],
-]
+sections = ["function-keys", "cursor-keys", "paths", "bottom"]

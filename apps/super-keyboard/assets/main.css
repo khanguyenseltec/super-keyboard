@@ -1,18 +1,84 @@
-:root {
+/*
+ * Super Keyboard styles.
+ *
+ * Every colour and size is a variable on `.app`, so themes and user overrides
+ * only change variables. `data-theme` on `.app` picks the theme: `system`
+ * (follows the OS), `light` or `dark`. Users override variables in
+ * settings.toml under [style], [style.dark] and [style.light]; the app writes
+ * those rules after this file. See docs/CUSTOMIZING.md.
+ *
+ * Contrast (WCAG): text on keys >= 12:1; muted labels >= 5:1; the accent on
+ * named keys (one-shot modifiers, active layer) >= 4.5:1; locked-modifier
+ * labels on the accent >= 6.5:1, in both themes.
+ */
+
+/* ---- Theme variables ---------------------------------------------------- */
+
+.app {
+    /* Dark theme, the default. */
     --bg: #0f1115;
     --panel: #171a21;
     --key: #232833;
-    --key-named: #1c2029;
-    --key-pressed: #2f3644;
+    --key-special: #1c2029;
+    --key-pressed: #323a49;
     --text: #e6e9ef;
     --muted: #8b93a3;
     --accent: #7aa2f7;
-    --accent-strong: #f7768e;
+    --on-accent: #0f1115;
+    --selection: rgba(122, 162, 247, 0.35);
+    --warning: #e0af68;
+
+    /* Sizes. Keys follow the viewport height, never below a 40px touch target. */
     --radius: 6px;
     --gap: 4px;
-    font-family: "JetBrains Mono", "Fira Code", "Ubuntu Mono", ui-monospace, monospace;
+    --key-height: clamp(40px, 7vh, 56px);
+    --key-font: clamp(13px, 0.75rem + 0.6vw, 18px);
+
     color-scheme: dark;
 }
+
+.app[data-theme="light"] {
+    --bg: #f4f5f7;
+    --panel: #e3e6eb;
+    --key: #ffffff;
+    --key-special: #d5d9e0;
+    --key-pressed: #c8ced8;
+    --text: #1b1f27;
+    --muted: #4b5363;
+    --accent: #1d4ed8;
+    --on-accent: #ffffff;
+    --selection: rgba(29, 78, 216, 0.22);
+    --warning: #855000;
+    color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+    .app[data-theme="system"] {
+        --bg: #f4f5f7;
+        --panel: #e3e6eb;
+        --key: #ffffff;
+        --key-special: #d5d9e0;
+        --key-pressed: #c8ced8;
+        --text: #1b1f27;
+        --muted: #4b5363;
+        --accent: #1d4ed8;
+        --on-accent: #ffffff;
+        --selection: rgba(29, 78, 216, 0.22);
+        --warning: #855000;
+        color-scheme: light;
+    }
+}
+
+/* Phones in landscape: keep the preview visible above five rows of keys. */
+@media (orientation: landscape) and (max-height: 500px) {
+    .app {
+        --key-height: 40px;
+        --key-font: 13px;
+        --gap: 3px;
+    }
+}
+
+/* ---- Page --------------------------------------------------------------- */
 
 * {
     box-sizing: border-box;
@@ -22,42 +88,120 @@ html,
 body {
     margin: 0;
     height: 100%;
-    background: var(--bg);
-    color: var(--text);
 }
 
 .app {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "JetBrains Mono", "Fira Code", "Ubuntu Mono", ui-monospace, monospace;
 }
+
+code {
+    font: inherit;
+    color: var(--text);
+}
+
+/* ---- Top bar ------------------------------------------------------------ */
 
 .bar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
+    gap: 10px;
+    padding: 6px 12px;
     background: var(--panel);
     font-size: 13px;
 }
 
 .bar .title {
     font-weight: 700;
+    white-space: nowrap;
 }
 
 .bar .status {
-    color: var(--muted);
     flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
-.bar .clear {
-    background: none;
+.bar .status:disabled {
+    color: var(--muted);
+    cursor: default;
+}
+
+.bar select,
+.bar-button,
+.icon-button,
+.field select,
+.field input[type="text"] {
+    min-height: 32px;
+    padding: 2px 10px;
     border: 1px solid var(--key-pressed);
     border-radius: var(--radius);
-    color: var(--muted);
+    background: var(--key-special);
+    color: var(--text);
     font: inherit;
-    padding: 2px 10px;
+    font-size: 13px;
 }
+
+.bar-button,
+.icon-button {
+    cursor: pointer;
+}
+
+.bar-button:disabled,
+.icon-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.field input[type="text"] {
+    grid-column: span 2;
+    width: 100%;
+}
+
+.bar-button[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+@media (max-width: 480px) {
+    .bar .title {
+        display: none;
+    }
+}
+
+/* ---- Notices ------------------------------------------------------------ */
+
+.notices {
+    margin: 0;
+    padding: 6px 12px;
+    max-height: 6.5em;
+    overflow: auto;
+    list-style: none;
+    background: var(--panel);
+    border-left: 3px solid var(--warning);
+    font-size: 12px;
+}
+
+.notices .file {
+    color: var(--warning);
+    font-weight: 700;
+}
+
+/* ---- Preview ------------------------------------------------------------ */
 
 .preview {
     flex: 1;
@@ -73,14 +217,21 @@ body {
     overflow: auto;
     white-space: pre-wrap;
     word-break: break-all;
+    font: inherit;
     font-size: 15px;
     tab-size: 4;
 }
 
+.preview .selection {
+    background: var(--selection);
+    color: inherit;
+}
+
 .caret {
     display: inline-block;
-    width: 0.6ch;
+    width: 2px;
     height: 1.1em;
+    margin: 0 -1px;
     vertical-align: text-bottom;
     background: var(--accent);
     animation: blink 1s steps(1) infinite;
@@ -102,15 +253,234 @@ body {
     overflow: hidden;
 }
 
+@media (max-width: 480px) {
+    .preview .log {
+        display: none;
+    }
+}
+
+/* ---- Settings ----------------------------------------------------------- */
+
+.settings {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+}
+
+.fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px 24px;
+}
+
+.field {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr 4.5rem;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.field select {
+    grid-column: span 2;
+}
+
+.field.toggle {
+    grid-template-columns: 9.5rem auto;
+    justify-content: start;
+}
+
+.field input {
+    accent-color: var(--accent);
+}
+
+.field input[type="range"] {
+    width: 100%;
+    min-height: 32px;
+}
+
+.field input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.field .value {
+    color: var(--muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.field:has(input:disabled) {
+    opacity: 0.5;
+}
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--key-pressed);
+}
+
+.tab {
+    min-height: 36px;
+    padding: 4px 14px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+    border-bottom-color: var(--accent);
+    color: var(--text);
+}
+
+.settings-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.hint strong {
+    color: var(--text);
+}
+
+/* Reorderable lists: sections of a profile, profiles in the menu. */
+.arrange-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.arrange-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 4px 8px;
+    border-left: 3px solid transparent;
+    border-radius: var(--radius);
+    background: var(--panel);
+    font-size: 13px;
+}
+
+.arrange-item.here {
+    border-left-color: var(--accent);
+}
+
+.arrange-item.off .arrange-title {
+    color: var(--muted);
+}
+
+.arrange-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
+.arrange-item input[type="checkbox"]:disabled {
+    opacity: 0.6;
+}
+
+.arrange-title {
+    flex: 1 1 10rem;
+    min-width: 0;
+}
+
+.move {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.icon-button {
+    min-width: 32px;
+    padding: 2px 6px;
+    font-size: 11px;
+}
+
+.tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tag {
+    padding: 1px 6px;
+    border-radius: var(--radius);
+    background: var(--key-special);
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.tag.here {
+    color: var(--accent);
+}
+
+.row-actions,
+.actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.settings-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-top: auto;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.save-status {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.save-status.error {
+    color: var(--warning);
+}
+
+/* ---- Keyboard ----------------------------------------------------------- */
+
 .keyboard {
     display: flex;
     flex-direction: column;
     gap: var(--gap);
     padding: var(--gap);
+    padding-bottom: max(var(--gap), env(safe-area-inset-bottom));
     background: var(--panel);
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+    /* The keyboard handles every gesture itself: no scrolling or zooming. */
+    touch-action: none;
+}
+
+@media (min-width: 900px) {
+    .keyboard {
+        align-self: center;
+        width: 100%;
+        max-width: 1100px;
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
 }
 
 .row {
@@ -119,33 +489,61 @@ body {
 }
 
 .key {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex: 1 1 0;
     min-width: 0;
-    height: 48px;
+    height: var(--key-height);
+    padding: 0 2px;
     border: none;
     border-radius: var(--radius);
     background: var(--key);
     color: var(--text);
     font: inherit;
-    font-size: 16px;
-    touch-action: manipulation;
+    font-size: var(--key-font);
     cursor: pointer;
 }
 
-.key:active {
+.key .label {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.key .hint {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    color: var(--muted);
+    font-size: calc(var(--key-font) * 0.6);
+    line-height: 1;
+    pointer-events: none;
+}
+
+.key:active,
+.key.pressed {
     background: var(--key-pressed);
 }
 
-.key.named,
+.key.special,
 .key.mod,
 .key.layer {
-    background: var(--key-named);
+    background: var(--key-special);
     color: var(--muted);
-    font-size: 13px;
+    font-size: calc(var(--key-font) * 0.8);
+}
+
+.key.special:active,
+.key.special.pressed,
+.key.mod.pressed,
+.key.layer.pressed {
+    background: var(--key-pressed);
 }
 
 .key.op {
-    font-size: 14px;
+    font-size: calc(var(--key-font) * 0.85);
 }
 
 .key.oneshot,
@@ -154,15 +552,8 @@ body {
     box-shadow: inset 0 -2px 0 var(--accent);
 }
 
-.key.locked {
-    color: var(--bg);
+.key.locked,
+.key.locked.pressed {
+    color: var(--on-accent);
     background: var(--accent);
-}
-
-@media (min-width: 900px) {
-    .keyboard {
-        align-self: center;
-        width: 900px;
-        border-radius: var(--radius) var(--radius) 0 0;
-    }
 }

@@ -19,13 +19,15 @@ preview, on Ubuntu desktop and on an Android phone (running as an app).
 
 - [ ] Run on Ubuntu 22.04 and 24.04 with `dx serve --desktop`; fix anything that only shows up in a real window
 - [ ] Run on an Android device with `dx serve --android` and document the setup
-- [ ] Key repeat while holding Backspace, Delete and arrow keys (**good first issue**)
-- [ ] Hold actions in layout files (`hold = "..."`), for example long-press `.` for `..`
-- [ ] Swipe along the space bar to move the cursor
-- [ ] Load user layouts from the config directory, reload on change, and show layout errors in the app
-- [ ] Light theme and theme variables (**good first issue**)
-- [ ] Responsive key sizing for phone portrait and landscape, tablet and desktop (**good first issue**)
-- [ ] Property tests for the engine with `proptest` (**good first issue**)
+- [x] Key repeat while holding Backspace, Delete and arrow keys
+- [x] Hold actions in layout files (`hold = "..."`), for example long-press `.` for `..`
+- [x] Swipe along the space bar to move the cursor (Shift selects)
+- [x] Load user layouts from the config directory, reload on change, and show layout errors in the app
+- [x] `settings.toml` and a settings screen: theme, long-press and repeat timing, swipe step, key size, style overrides
+- [x] Modular layouts: sections switched on or off and reordered per profile; presets; a profile menu that can be reordered and trimmed
+- [x] Light theme and theme variables
+- [x] Responsive key sizing for phone portrait and landscape, tablet and desktop
+- [x] Property tests for the engine with `proptest`
 
 ## Phase 2: Android system keyboard, milestone `v0.2`
 
@@ -56,7 +58,7 @@ focused terminal or editor without taking focus.
 - [ ] Snippets with placeholders and language profiles (Rust, Python, TypeScript, shell, Git, Vim)
 - [ ] Auto-pair brackets and quotes (toggle)
 - [ ] Record and replay macros
-- [ ] Per-app profiles (Android package name, desktop window class)
+- [ ] Per-app profiles: switch profile by Android package name or desktop window class
 - [ ] Clipboard history: opt-in, in memory, off in password fields
 - [ ] Command palette key: fuzzy search over snippets and commands
 - [ ] Visual layout editor that writes TOML

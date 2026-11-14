@@ -20,10 +20,11 @@ they can reach them, and lets you define your own layouts as code.
 Use it to SSH into a server from your phone, edit in Vim or Helix on a tablet, drive a
 terminal on a touchscreen laptop, or keep a programmable symbol pad next to your editor.
 
-> **Status: pre-alpha.** The engine and the app shell are in place: the app renders the
-> developer layout and types into its own preview panel. Typing into *other*
-> applications (Android system keyboard, Ubuntu input) is the next big step. See the
-> [roadmap](docs/ROADMAP.md). **Collaborators are very welcome.**
+> **Status: pre-alpha.** The in-app keyboard works: long-press, key repeat, cursor
+> swipe, your own layouts and settings with live reload, light and dark themes. It types
+> into its own preview panel. Typing into *other* applications (Android system keyboard,
+> Ubuntu input) is the next big step. See the [roadmap](docs/ROADMAP.md).
+> **Collaborators are very welcome.**
 
 ## Features
 
@@ -32,8 +33,13 @@ terminal on a touchscreen laptop, or keep a programmable symbol pad next to your
 | Developer layout: brackets, Esc and Tab on the base layer; symbols, operators (`->` `=>` `::` `&&`), navigation and F-keys one tap away | Done |
 | One-shot and locked modifiers: tap `ctrl` then `c` to send `Ctrl+C`; tap twice to lock | Done |
 | Layers and layouts defined in TOML ("keyboard as code"), with clear errors | Done |
-| Dioxus UI for Ubuntu desktop and Android, with an in-app preview | Built and render-tested in CI; first device runs are Phase 1 |
-| Key repeat, long-press actions, space-bar cursor swipe, user layouts with live reload, themes | Phase 1 |
+| Long-press actions (`hold`), key repeat for Backspace and arrows, space-bar cursor swipe (Shift selects) | Done |
+| Modular key maps: sections (number row, brackets, terminal keys, ...) switched on or off and reordered per profile | Done |
+| Profiles and presets (Coding, Terminal, Compact, ...), with a profile menu you can reorder and trim | Done |
+| Your own layouts and a `settings.toml`, reloaded live, with errors shown in the app | Done |
+| Settings screen: theme, long-press and repeat timing, swipe step, key size | Done |
+| Light and dark themes, colour and size overrides, responsive key sizing | Done |
+| Dioxus UI for Ubuntu desktop and Android, with an in-app preview | Built and tested in CI; first device runs are Phase 1 |
 | Android system keyboard (IME) that types into any app, including Ctrl/Alt in Termux | Phase 2 |
 | Ubuntu desktop keyboard that types into other windows (uinput, portal, XTest) | Phase 3 |
 | Snippets per language, auto-pairs, macros, per-app profiles, clipboard history (opt-in) | Phase 4 |
@@ -50,6 +56,9 @@ terminal on a touchscreen laptop, or keep a programmable symbol pad next to your
  ctrl sym alt [   space   ]  ,   .  nav ⏎     (same bottom row on every layer)
 ```
 
+Hold `q`…`p` for `1`…`0`, `.` for `..`, `_` for `-` and `/` for `//`. Drag along the
+space bar to move the cursor; with Shift on, the drag selects.
+
 Layouts are TOML. This is all it takes to define a layer:
 
 ```toml
@@ -57,13 +66,47 @@ Layouts are TOML. This is all it takes to define a layer:
 name = "base"
 rows = [
     ["<esc>", "<tab>", "(", ")", "{", "}", "[", "]", ";", ":"],
-    ["<ctrl>", "<layer:sym>", { tap = "<space>", width = 3.0 }, "->", "<enter>"],
+    [{ tap = "q", hold = "1" }, "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["<ctrl>", "<layer:sym>", { tap = "<space>", width = 3.0, swipe = "cursor" }, "->", "<enter>"],
 ]
 ```
 
 `"->"` inserts text, `"<esc>"` presses a key, `"<ctrl>"` arms a modifier and
-`"<layer:sym>"` switches layer. The full notation is documented at the top of
-[`crates/core/layouts/dev.toml`](crates/core/layouts/dev.toml).
+`"<layer:sym>"` switches layer; `hold`, `swipe`, `width` and `repeat` are options. Real
+layouts group rows into named `[[sections]]` that profiles can rearrange.
+
+## Make it yours
+
+Layouts are made of **sections**: the number row, the bracket row, terminal keys,
+letters, the space-bar row. A **profile** switches sections on or off and reorders them;
+the app ships **presets** (Coding, Coding with a number row, Terminal, Compact), and
+changing one gives you your own copy. Pick a profile from the menu in the top bar, and
+arrange sections and the menu itself on the settings screen.
+
+Drop your own layouts into `~/.config/super-keyboard/layouts/`. Everything is plain TOML
+that the app reloads as you save it, and a mistake is reported in the app with its file,
+row and key instead of breaking the keyboard:
+
+```toml
+# ~/.config/super-keyboard/settings.toml
+profile = "mine"
+theme = "system"          # or "light", "dark"
+
+[keys]
+hold-delay = 300          # ms
+repeat-rate = 30          # per second
+
+[style.dark]
+accent = "#ff9e64"
+
+[[profiles]]
+name = "mine"
+layout = "dev"
+sections = { number-row = true, brackets = false }
+order = ["letters", "number-row"]
+```
+
+Everything is described in [docs/CUSTOMIZING.md](docs/CUSTOMIZING.md).
 
 ## Getting started
 
@@ -73,7 +116,7 @@ You need Rust (stable, 1.88 or newer).
 git clone https://github.com/tristanseltec/super-keyboard
 cd super-keyboard
 
-# Engine tests and a UI render test. Needs no system libraries.
+# Engine, config and UI tests (including property tests). Needs no system libraries.
 cargo test --workspace --no-default-features
 ```
 
@@ -110,15 +153,19 @@ For now this runs Super Keyboard as an app. Running it as the system keyboard is
 ## How it works
 
 ```text
-apps/super-keyboard  (Dioxus UI)  ──tap──▶  crates/core  (layouts, layers, modifiers)
-                                                 │
-                                         Output: Text("->") | Key(Ctrl+Shift+T)
-                                                 ▼
-                       OutputSink: preview today; Android InputConnection, Linux uinput / portal / XTest next
+crates/config (settings.toml, layouts/)  ──▶  apps/super-keyboard (Dioxus UI)
+                                                    │ pointer down / move / up + time
+                                                    ▼
+                    crates/core: gestures (tap, hold, repeat, swipe) ──▶ keyboard (layers, modifiers)
+                                                    │
+                                     Output: Text("->") | Key(Ctrl+Shift+T)
+                                                    ▼
+                  OutputSink: preview today; Android InputConnection, Linux uinput / portal / XTest next
 ```
 
 The engine has no UI or platform code, so it is tested on any machine and shared by every
-front end. Each platform only implements one small trait. The hard parts, Android IME
+front end. Gesture timing lives in the engine too, with the clock passed in, so long-press
+and repeat behave the same everywhere. Each platform only implements one small trait. The hard parts, Android IME
 hosting and typing into other windows on GNOME Wayland, are described with their options
 in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
