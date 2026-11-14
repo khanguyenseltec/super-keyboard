@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Super Keyboard">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7aa2f7"/>
+      <stop offset="1" stop-color="#bb9af7"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="12" x2="0" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a2f45"/>
+      <stop offset="1" stop-color="#1a1b26"/>
+    </linearGradient>
+    <linearGradient id="glyph" x1="34" y1="30" x2="94" y2="84" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9ab8ff"/>
+      <stop offset="1" stop-color="#d2b6ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#rim)"/>
+  <rect x="15" y="11" width="98" height="92" rx="21" fill="url(#face)"/>
+  <g fill="none" stroke="url(#glyph)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M53 33c-8 0-10.5 3-10.5 10v7.5c0 4.2-2.3 6.5-7.5 6.5 5.2 0 7.5 2.3 7.5 6.5V71c0 7 2.5 10 10.5 10"/>
+    <path d="M75 33c8 0 10.5 3 10.5 10v7.5c0 4.2 2.3 6.5 7.5 6.5-5.2 0-7.5 2.3-7.5 6.5V71c0 7-2.5 10-10.5 10"/>
+  </g>
+</svg>
