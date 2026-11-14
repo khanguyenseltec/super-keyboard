@@ -42,10 +42,11 @@ you can rely on it if you cannot install the webview libraries locally.
 | `crates/core/src/output/` | `Output`, `OutputSink`, the preview's `TextBuffer` and `PreviewSink` |
 | `crates/core/tests/properties.rs` | Property tests for the engine |
 | `crates/core/layouts/dev.toml` | The built-in developer layout |
-| `crates/config/src/` | Config directory, `settings/` (model, schema, saving), `profile.rs` (profiles, presets, the menu), `style.rs`, `library.rs`, `user_config.rs` |
+| `crates/config/src/` | Config directory, `settings/` (model, schema, saving), `profile.rs` (profiles, presets, the menu), `style.rs` (style variables and safe values), `theme/` (theme files and library), `library.rs`, `user_config.rs` |
 | `crates/config/presets.toml` | The built-in profiles |
+| `crates/config/themes/` | The built-in themes (JSON) and `theme.schema.json`. A new theme goes here and in `BUILTIN` in `theme/mod.rs`; a test checks its label contrast |
 | `apps/super-keyboard/src/` | The Dioxus app: `app.rs`, `state.rs`, `controller.rs`, `components/` (the settings panel's tabs are in `components/settings/`) |
-| `apps/super-keyboard/assets/main.css` | Styles and theme variables |
+| `apps/super-keyboard/assets/main.css` | Layout and styles; colours, fonts and sizes come from theme variables |
 
 ## Making a change
 

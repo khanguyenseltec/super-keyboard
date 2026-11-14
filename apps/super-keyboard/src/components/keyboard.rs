@@ -31,11 +31,19 @@ pub fn KeyboardView() -> Element {
             .collect()
     };
 
+    // Rows and the widest row, for labels that grow with the keys.
+    let cols = rows
+        .iter()
+        .map(|row| row.iter().map(|face| face.width).sum::<f32>())
+        .fold(1.0_f32, f32::max);
+    let grid = format!("--rows:{};--cols:{cols}", rows.len().max(1));
+
     rsx! {
         div {
             class: "keyboard",
             role: "group",
             aria_label: "Keyboard",
+            style: "{grid}",
             onpointermove: move |evt| controller.moved(pointer_id(&evt), pointer_x(&evt)),
             onpointerup: move |evt| controller.release(pointer_id(&evt)),
             onpointercancel: move |evt| controller.cancel(pointer_id(&evt)),

@@ -1,8 +1,9 @@
 # Customizing Super Keyboard
 
-Super Keyboard is configured with plain files: one `settings.toml` and any number of
-layouts. The app's **settings** screen edits `settings.toml` for you; everything else
-is a text editor away. On the desktop, the app reloads when you save a file.
+Super Keyboard is configured with plain files: one `settings.toml`, and any number of
+layouts and themes. The app's **settings** screen edits `settings.toml` for you;
+everything else is a text editor away. On the desktop, the app reloads when you save a
+file.
 
 Three ideas make the keyboard modular:
 
@@ -24,10 +25,13 @@ Three ideas make the keyboard modular:
 
 ```text
 ~/.config/super-keyboard/
-├── settings.toml        profile, theme, key timing and size, colours, profiles, menu
-└── layouts/
-    ├── dev.toml         optional: replaces the built-in `dev` layout
-    └── vim.toml         another layout, chosen as "vim"
+├── settings.toml        profile, theme, key timing, keyboard size, style, profiles, menu
+├── layouts/
+│   ├── dev.toml         optional: replaces the built-in `dev` layout
+│   └── vim.toml         another layout, chosen as "vim"
+└── themes/
+    ├── nord.json        optional: replaces the built-in `nord` theme
+    └── midnight.json    another theme, chosen as "midnight"
 ```
 
 Nothing has to exist. The directory and `settings.toml` are created the first time you
@@ -39,9 +43,10 @@ A broken file never stops the keyboard. The app shows what is wrong and where, u
 the top bar:
 
 ```text
-layouts/vim.toml  layer `base`, row 2, key 4: unknown key `<esc2>`
-settings.toml     `keys.repeat-rate` must be between 5 and 60, not 100
-settings.toml     profile `mine`: layout `dev` has no section `numbers`
+layouts/vim.toml       layer `base`, row 2, key 4: unknown key `<esc2>`
+settings.toml          `keys.repeat-rate` must be between 5 and 60, not 100
+settings.toml          profile `mine`: layout `dev` has no section `numbers`
+themes/midnight.json   `colors.acent` is not a theme colour (known: bg, panel, key, ...)
 ```
 
 While you edit, the last good version of a broken file stays in use, so saving a
@@ -57,8 +62,10 @@ when it saves.
 # Profile to use: a preset, one of your [[profiles]], or a layout file's name.
 profile = "coding"
 
-# Colour theme: "system" (follow the desktop or phone), "light" or "dark".
+# Theme: "system" follows the desktop or phone, or name one theme to always use.
 theme = "system"
+light-theme = "light"   # what "system" shows while the system is light
+dark-theme = "nord"     # ... and while it is dark
 
 [keys]
 hold-delay = 300      # milliseconds before a long-press fires a key's hold action (150-1000)
@@ -67,16 +74,22 @@ repeat-rate = 30      # repeats per second (5-60)
 swipe-step = 12       # pixels of drag per cursor step on the space bar (4-40)
 height = "auto"       # "auto" fits keys to the screen, or a number of pixels (32-96)
 
+[keyboard]            # see Keyboard size below
+width = "auto"        # "auto", or a percentage of the window width (40-100)
+height = "auto"       # "auto", or a percentage of the window height (20-100)
+align = "center"      # "center", "left" or "right"
+
 [preview]
 show-log = true       # show recent output beside the preview text
 
-[style]               # colours and sizes for both themes
+[style]               # changes to every theme
 radius = "8px"
+key-font-family = "Fira Code, monospace"
 
-[style.dark]          # only in the dark theme
+[style.dark]          # only in dark themes
 accent = "#ff9e64"
 
-[style.light]         # only in the light theme
+[style.light]         # only in light themes
 accent = "#c2410c"
 
 [menu]                # the profile menu (see Profiles below)
@@ -90,11 +103,106 @@ layout = "dev"
 sections = { number-row = true, brackets = false }
 ```
 
+## Themes
+
+A theme sets the colours, the fonts and the shape of the keys. Pick one on the
+settings screen's **Themes** tab, where every theme is drawn in its own colours and
+fonts:
+
+- **Follow the system**: tap a dark theme for when the desktop or phone is dark, and a
+  light theme for when it is light (`theme = "system"`, `dark-theme`, `light-theme`).
+- **One theme**: tap the theme to use whatever the system says (`theme = "nord"`).
+
+### Built-in themes
+
+| Name | Appearance | Look | Fonts |
+|---|---|---|---|
+| `dark` (default) | dark | Cool greys, soft blue accent | JetBrains Mono |
+| `tokyo-night` | dark | Deep indigo, neon blue | Inter, JetBrains Mono keys |
+| `dracula` | dark | Purple and pink on charcoal | Fira Code |
+| `nord` | dark | Arctic blue-greys and frost | Inter, medium-weight keys |
+| `gruvbox-dark` | dark | Warm retro browns and yellow | Iosevka, semi-bold keys |
+| `solarized-dark` | dark | Teal night, precise accents | Source Sans 3, Source Code Pro |
+| `catppuccin-mocha` | dark | Pastel mauve on soft dark | Inter, Cascadia Code keys |
+| `one-dark` | dark | The balanced editor classic | Inter, Source Code Pro |
+| `rose-pine` | dark | Muted roses and pine on plum | Inter, Cascadia Code keys |
+| `everforest-dark` | dark | Soft forest greens | Hack |
+| `kanagawa` | dark | Ink and wave blues | Inter, Iosevka |
+| `aubergine` | dark | Aubergine and orange | Ubuntu, Ubuntu Mono |
+| `oled` | dark | True black for OLED phones, outlined keys | Roboto, Roboto Mono |
+| `amber` | dark | Glowing amber CRT, square keys | VT323, Terminus |
+| `phosphor` | dark | Green terminal glow, outlined square keys | Share Tech Mono, VT323 |
+| `neon` | dark | Violet night, hot pink, glowing outlines | Exo 2, Share Tech Mono |
+| `high-contrast-dark` | dark | White on black, outlined keys, yellow accent | Atkinson Hyperlegible, bold keys |
+| `light` (default) | light | White keys on soft grey, deep blue accent | JetBrains Mono |
+| `solarized-light` | light | Warm cream, precise accents | Source Sans 3, Source Code Pro |
+| `gruvbox-light` | light | Retro parchment, earthy ink | Iosevka, semi-bold keys |
+| `catppuccin-latte` | light | Milky pastels, mauve accent | Inter, Cascadia Code keys |
+| `rose-pine-dawn` | light | Dawn pinks and pine on warm paper | Inter, Cascadia Code keys |
+| `paper` | light | Warm sepia, serif interface | Literata or Georgia, IBM Plex Mono |
+| `high-contrast-light` | light | Black on white, outlined keys | Atkinson Hyperlegible, bold keys |
+
+Themes named after an editor colour scheme take their colours from that scheme's
+published palette (all MIT licensed), with some shades adjusted so labels stay
+readable. Every built-in theme keeps key labels at 7:1 contrast or better against
+their keys, and secondary text, named-key labels and the accent at 4.5:1 or better; a
+test checks this for every theme.
+
+**Fonts are never downloaded.** A theme lists fonts in order of preference and ends
+with a generic family such as `monospace` or `sans-serif`; the first one installed is
+used. Install a font (on Ubuntu, `sudo apt install fonts-jetbrains-mono`, or copy it
+to `~/.local/share/fonts`) to see a theme as designed.
+
+### Your own themes
+
+A theme is a JSON file in `themes/`. Its file name (without `.json`) is the name you
+choose it by; a file named like a built-in theme replaces it. The easiest start is
+**edit a copy** on the Themes tab, which saves the theme you use to `themes/` for you.
+Or copy one from [`crates/config/themes/`](../crates/config/themes/).
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/tristanseltec/super-keyboard/main/crates/config/themes/theme.schema.json",
+  "title": "Midnight",
+  "description": "Shown as a tooltip in the theme list.",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#0b1020",
+    "panel": "#080c18",
+    "key": "#1b2340",
+    "key-special": "#141a30",
+    "accent": "#ffb454",
+    "on-accent": "#0b1020"
+  },
+  "fonts": {
+    "ui": { "family": ["Inter", "Ubuntu", "sans-serif"], "size": "13px" },
+    "keys": { "family": ["Fira Code", "monospace"], "weight": 500 },
+    "preview": { "family": "JetBrains Mono, monospace", "size": "15px" }
+  },
+  "sizes": { "radius": "10px", "gap": "4px" }
+}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `title` | yes | What the theme list shows. |
+| `appearance` | yes | `"dark"` or `"light"`. Decides which `[style.dark]` or `[style.light]` changes apply and where the theme is offered while following the system. |
+| `description` | no | A sentence about the theme. |
+| `colors` | no | Any of the colour variables below. |
+| `fonts` | no | `ui` (top bar, settings, notices), `keys` (key labels) and `preview` (the typed text), each with a `family` (a list of fonts, or one string with commas), a `size` and a `weight` (`400`, `"bold"`). |
+| `sizes` | no | `radius` and `gap`. |
+| `$schema` | no | Ignored by the app; lets editors such as VS Code complete and check the file against [`theme.schema.json`](../crates/config/themes/theme.schema.json). |
+
+Everything you leave out comes from the built-in theme with the same appearance
+(`dark` or `light`), except key labels: `key-text` follows your `text` and
+`key-special-text` your `muted`. So a theme can be three colours long. Unknown fields
+and bad values are reported in the app with the field's name, like any other file.
+
 ### Style variables
 
-`[style]` applies to both themes; `[style.dark]` and `[style.light]` override it for one
-theme. Values are CSS colours (`#7aa2f7`, `rgb(…)`, `hsl(…)`, `oklch(…)`, `color-mix(…)`,
-colour names) or lengths (`6px`, `0.5rem`, `calc(…)`, `clamp(…)`).
+`[style]` in `settings.toml` changes every theme; `[style.dark]` and `[style.light]`
+change only dark or only light themes, and win over `[style]`. Themes set the same
+variables (under `colors`, `fonts` and `sizes`).
 
 | Variable | Kind | What it changes |
 |---|---|---|
@@ -103,25 +211,61 @@ colour names) or lengths (`6px`, `0.5rem`, `calc(…)`, `clamp(…)`).
 | `key` | colour | key background |
 | `key-special` | colour | background of Esc, modifier, layer and other named keys |
 | `key-pressed` | colour | key background while pressed |
-| `text` | colour | main text and key labels |
-| `muted` | colour | secondary text and named-key labels |
+| `key-border` | colour | key outline (`transparent` for none) |
+| `text` | colour | main text |
+| `key-text` | colour | key labels |
+| `key-special-text` | colour | labels of named keys |
+| `muted` | colour | secondary text and hold hints |
 | `accent` | colour | caret, one-shot modifiers and the active layer |
 | `on-accent` | colour | label of a locked modifier, drawn on the accent colour |
 | `selection` | colour | selected text in the preview |
 | `warning` | colour | notices about layout and settings errors |
 | `radius` | length | key corner radius |
 | `gap` | length | space between keys |
-| `key-font` | length | key label size |
+| `font-family` | fonts | top bar, settings and notices |
+| `font-size` | length | their text size |
+| `font-weight` | weight | their text weight |
+| `key-font-family` | fonts | key labels |
+| `key-font-size` | length | key label size (`key-font` still works) |
+| `key-font-weight` | weight | key label weight |
+| `preview-font-family` | fonts | the typed text in the preview |
+| `preview-font-size` | length | its size |
+| `preview-font-weight` | weight | its weight |
+
+Colours are CSS colours (`#7aa2f7`, `rgb(…)`, `hsl(…)`, `oklch(…)`, `color-mix(…)`,
+colour names); lengths are `6px`, `0.5rem`, `calc(…)`, `clamp(…)`; weights are
+`normal`, `bold` or a number from 1 to 1000; fonts are names separated by commas,
+without quotes (`"Fira Code, monospace"`).
 
 Key height is `keys.height`, not a style variable, because the settings screen controls it.
 
-**Styles can never load anything.** A keyboard must not be able to send what it shows
-anywhere, so style values may only use the characters and functions above:
-`url(…)`, `image-set(…)`, `@import`, quotes, `;`, braces and backslashes are rejected
-with an error that names the value.
+**Styles and themes can never load anything.** A keyboard must not be able to send
+what it shows anywhere, so values may only use the characters and functions above:
+`url(…)`, `image-set(…)`, `@import`, `@font-face`, quotes, `;`, braces and backslashes
+are rejected with an error that names the value. Font names may only use letters,
+digits, spaces and `._+&-`, and the app quotes them itself.
 
-Check contrast when you change colours: the built-in themes keep labels at 4.5:1 or
-better against their keys in both themes, including one-shot and locked modifiers.
+Check contrast when you change colours: aim for 4.5:1 or better between every label
+and what it is drawn on.
+
+## Keyboard size
+
+By default the keyboard spans the window (at most 1100 pixels on wide screens) and its
+keys follow the screen height. On the **General** tab, under *Keyboard size*, or in
+`[keyboard]`:
+
+| Setting | Values | What it does |
+|---|---|---|
+| Height: *Fit to screen* | `keys.height = "auto"` | Keys follow the screen height, at least 40 pixels. |
+| Height: *Fixed key height* | `keys.height = 52` | Every row is that many pixels tall (32-96). |
+| Height: *Share of window* | `keyboard.height = 45` | The keyboard fills that percentage of the window height (20-100) and its keys stretch to fill it, labels growing with them. Wins over `keys.height`. |
+| Width | `keyboard.width = 80` | The keyboard spans that percentage of the window width (40-100). `"auto"` is the full width. |
+| Position | `keyboard.align = "left"` | Where a narrower keyboard sits: `"center"`, `"left"` or `"right"`, for example to type with one hand on a big phone. |
+
+`keyboard.height = 100` gives a **full keyboard**: it fills the window below the top
+bar, hides the preview, and grows and shrinks as you resize the window. While the
+settings panel is open it keeps up to half the window (420 pixels) for itself, so you
+can always change the size back.
 
 ## Profiles and presets
 

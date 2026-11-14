@@ -1,0 +1,42 @@
+{
+  "title": "Nord",
+  "description": "Arctic blue-greys and frost, after the Nord palette by Arctic Ice Studio (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#2e3440",
+    "panel": "#242933",
+    "key": "#434c5e",
+    "key-special": "#3b4252",
+    "key-pressed": "#4c566a",
+    "key-border": "transparent",
+    "text": "#eceff4",
+    "key-text": "#eceff4",
+    "key-special-text": "#c5cddb",
+    "muted": "#c5cddb",
+    "accent": "#88c0d0",
+    "on-accent": "#242933",
+    "selection": "#88c0d04d",
+    "warning": "#ebcb8b"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Inter", "Rubik", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Inter", "Rubik", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 500
+    },
+    "preview": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "8px",
+    "gap": "4px"
+  }
+}

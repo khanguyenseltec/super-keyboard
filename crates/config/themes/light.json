@@ -1,0 +1,42 @@
+{
+  "title": "Light",
+  "description": "The default light theme: white keys on soft grey, deep blue accent.",
+  "appearance": "light",
+  "colors": {
+    "bg": "#f4f5f7",
+    "panel": "#e3e6eb",
+    "key": "#ffffff",
+    "key-special": "#d5d9e0",
+    "key-pressed": "#c8ced8",
+    "key-border": "transparent",
+    "text": "#1b1f27",
+    "key-text": "#1b1f27",
+    "key-special-text": "#4b5363",
+    "muted": "#4b5363",
+    "accent": "#1d4ed8",
+    "on-accent": "#ffffff",
+    "selection": "#1d4ed838",
+    "warning": "#855000"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "6px",
+    "gap": "4px"
+  }
+}

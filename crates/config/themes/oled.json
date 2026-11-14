@@ -1,0 +1,42 @@
+{
+  "title": "OLED Black",
+  "description": "True black panels that switch pixels off on OLED phones; Roboto labels.",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#000000",
+    "panel": "#000000",
+    "key": "#141414",
+    "key-special": "#0b0b0b",
+    "key-pressed": "#2a2a2a",
+    "key-border": "#262626",
+    "text": "#f2f2f2",
+    "key-text": "#f2f2f2",
+    "key-special-text": "#a8a8a8",
+    "muted": "#a8a8a8",
+    "accent": "#3ea6ff",
+    "on-accent": "#000000",
+    "selection": "#3ea6ff4d",
+    "warning": "#ffb74d"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Roboto", "Noto Sans", "Inter", "Ubuntu", "Cantarell", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Roboto Mono", "Droid Sans Mono", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["Roboto Mono", "Droid Sans Mono", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "10px",
+    "gap": "4px"
+  }
+}

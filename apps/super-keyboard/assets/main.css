@@ -1,81 +1,33 @@
 /*
  * Super Keyboard styles.
  *
- * Every colour and size is a variable on `.app`, so themes and user overrides
- * only change variables. `data-theme` on `.app` picks the theme: `system`
- * (follows the OS), `light` or `dark`. Users override variables in
- * settings.toml under [style], [style.dark] and [style.light]; the app writes
- * those rules after this file. See docs/CUSTOMIZING.md.
+ * Every colour, font and size is a variable on `.app`. Themes set them: they
+ * are JSON files (crates/config/themes, and themes/ in the config directory),
+ * and the app writes the active theme's variables, with the user's [style]
+ * changes from settings.toml, in a rule after this file. So this file holds
+ * layout and the sizes no theme sets. See docs/CUSTOMIZING.md.
  *
- * Contrast (WCAG): text on keys >= 12:1; muted labels >= 5:1; the accent on
- * named keys (one-shot modifiers, active layer) >= 4.5:1; locked-modifier
- * labels on the accent >= 6.5:1, in both themes.
+ * Attributes on `.app` carry the theme and keyboard size settings:
+ *   data-theme   the theme setting: "system" or a theme's name
+ *   data-width   set when [keyboard] width is a percentage (--keyboard-width)
+ *   data-align   "left" or "right" when the keyboard does not sit in the centre
+ *   data-fill    "share" or "full" when [keyboard] height is a percentage
+ *                (--keyboard-height); keys then stretch to fill it
+ *
+ * Contrast (WCAG), checked for every built-in theme by a test in crates/config:
+ * text and key labels >= 7:1; muted text and named-key labels >= 4.5:1; the
+ * accent on named keys and the top bar >= 4.5:1; locked-modifier labels on
+ * the accent >= 4.5:1.
  */
 
-/* ---- Theme variables ---------------------------------------------------- */
+/* ---- Sizes no theme sets ------------------------------------------------- */
 
 .app {
-    /* Dark theme, the default. */
-    --bg: #0f1115;
-    --panel: #171a21;
-    --key: #232833;
-    --key-special: #1c2029;
-    --key-pressed: #323a49;
-    --text: #e6e9ef;
-    --muted: #8b93a3;
-    --accent: #7aa2f7;
-    --on-accent: #0f1115;
-    --selection: rgba(122, 162, 247, 0.35);
-    --warning: #e0af68;
-
-    /* Sizes. Keys follow the viewport height, never below a 40px touch target. */
-    --radius: 6px;
-    --gap: 4px;
+    /* Keys follow the viewport height, never below a 40px touch target. */
     --key-height: clamp(40px, 7vh, 56px);
-    --key-font: clamp(13px, 0.75rem + 0.6vw, 18px);
-
-    color-scheme: dark;
-}
-
-.app[data-theme="light"] {
-    --bg: #f4f5f7;
-    --panel: #e3e6eb;
-    --key: #ffffff;
-    --key-special: #d5d9e0;
-    --key-pressed: #c8ced8;
-    --text: #1b1f27;
-    --muted: #4b5363;
-    --accent: #1d4ed8;
-    --on-accent: #ffffff;
-    --selection: rgba(29, 78, 216, 0.22);
-    --warning: #855000;
-    color-scheme: light;
-}
-
-@media (prefers-color-scheme: light) {
-    .app[data-theme="system"] {
-        --bg: #f4f5f7;
-        --panel: #e3e6eb;
-        --key: #ffffff;
-        --key-special: #d5d9e0;
-        --key-pressed: #c8ced8;
-        --text: #1b1f27;
-        --muted: #4b5363;
-        --accent: #1d4ed8;
-        --on-accent: #ffffff;
-        --selection: rgba(29, 78, 216, 0.22);
-        --warning: #855000;
-        color-scheme: light;
-    }
-}
-
-/* Phones in landscape: keep the preview visible above five rows of keys. */
-@media (orientation: landscape) and (max-height: 500px) {
-    .app {
-        --key-height: 40px;
-        --key-font: 13px;
-        --gap: 3px;
-    }
+    /* Smaller text, from the theme's interface font size. */
+    --font-size-small: calc(var(--font-size) * 0.92);
+    --font-size-tiny: calc(var(--font-size) * 0.85);
 }
 
 /* ---- Page --------------------------------------------------------------- */
@@ -97,11 +49,15 @@ body {
     height: 100dvh;
     background: var(--bg);
     color: var(--text);
-    font-family: "JetBrains Mono", "Fira Code", "Ubuntu Mono", ui-monospace, monospace;
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    font-weight: var(--font-weight);
+    scrollbar-color: var(--key-pressed) transparent;
 }
 
 code {
-    font: inherit;
+    font-family: var(--preview-font-family);
+    font-size: inherit;
     color: var(--text);
 }
 
@@ -109,11 +65,11 @@ code {
 
 .bar {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: 10px;
     padding: 6px 12px;
     background: var(--panel);
-    font-size: 13px;
 }
 
 .bar .title {
@@ -153,12 +109,17 @@ code {
     background: var(--key-special);
     color: var(--text);
     font: inherit;
-    font-size: 13px;
 }
 
 .bar-button,
 .icon-button {
     cursor: pointer;
+}
+
+/* Long profile names must not squeeze the layer name out on phones. */
+.bar .profile-picker {
+    min-width: 6em;
+    max-width: 45%;
 }
 
 .bar-button:disabled,
@@ -172,7 +133,8 @@ code {
     width: 100%;
 }
 
-.bar-button[aria-pressed="true"] {
+.bar-button[aria-pressed="true"],
+.bar-button[aria-checked="true"] {
     border-color: var(--accent);
     color: var(--accent);
 }
@@ -186,6 +148,7 @@ code {
 /* ---- Notices ------------------------------------------------------------ */
 
 .notices {
+    flex-shrink: 0;
     margin: 0;
     padding: 6px 12px;
     max-height: 6.5em;
@@ -193,7 +156,7 @@ code {
     list-style: none;
     background: var(--panel);
     border-left: 3px solid var(--warning);
-    font-size: 12px;
+    font-size: var(--font-size-small);
 }
 
 .notices .file {
@@ -217,8 +180,9 @@ code {
     overflow: auto;
     white-space: pre-wrap;
     word-break: break-all;
-    font: inherit;
-    font-size: 15px;
+    font-family: var(--preview-font-family);
+    font-size: var(--preview-font-size);
+    font-weight: var(--preview-font-weight);
     tab-size: 4;
 }
 
@@ -249,7 +213,8 @@ code {
     padding: 0;
     list-style: none;
     color: var(--muted);
-    font-size: 12px;
+    font-family: var(--preview-font-family);
+    font-size: var(--font-size-small);
     overflow: hidden;
 }
 
@@ -282,7 +247,6 @@ code {
     grid-template-columns: 9.5rem 1fr 4.5rem;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
 }
 
 .field select {
@@ -332,7 +296,6 @@ code {
     background: none;
     color: var(--muted);
     font: inherit;
-    font-size: 13px;
     cursor: pointer;
 }
 
@@ -341,7 +304,8 @@ code {
     color: var(--text);
 }
 
-.settings-tab {
+.settings-tab,
+.settings-group {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -350,7 +314,16 @@ code {
 .hint {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--font-size-small);
+}
+
+.group-title {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: var(--font-size-small);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .hint strong {
@@ -376,7 +349,6 @@ code {
     border-left: 3px solid transparent;
     border-radius: var(--radius);
     background: var(--panel);
-    font-size: 13px;
 }
 
 .arrange-item.here {
@@ -411,7 +383,7 @@ code {
 .icon-button {
     min-width: 32px;
     padding: 2px 6px;
-    font-size: 11px;
+    font-size: var(--font-size-tiny);
 }
 
 .tags {
@@ -425,7 +397,7 @@ code {
     border-radius: var(--radius);
     background: var(--key-special);
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--font-size-tiny);
 }
 
 .tag.here {
@@ -446,7 +418,7 @@ code {
     gap: 8px 16px;
     margin-top: auto;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--font-size-small);
 }
 
 .save-status {
@@ -458,14 +430,131 @@ code {
     color: var(--warning);
 }
 
+/* Theme list: each card draws its theme from the variables in its own inline
+ * style, so it looks the way the app would. */
+.theme-mode {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.theme-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 2px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+}
+
+.theme-item.here {
+    border-color: var(--accent);
+}
+
+.theme-item .tags {
+    padding: 0 4px;
+    min-height: 1.5em;
+}
+
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--panel);
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-family);
+    font-size: 13px;
+    font-weight: var(--font-weight);
+    text-align: left;
+    cursor: pointer;
+}
+
+.theme-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.theme-sample {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    border-radius: var(--radius);
+    background: var(--panel);
+}
+
+.sample-key {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 4px 0;
+    border: 1px solid var(--key-border);
+    border-radius: var(--radius);
+    background: var(--key);
+    color: var(--key-text);
+    font-family: var(--key-font-family);
+    font-size: 12px;
+    font-weight: var(--key-font-weight);
+    text-align: center;
+    overflow: hidden;
+}
+
+.sample-key.special {
+    background: var(--key-special);
+    color: var(--key-special-text);
+}
+
+.sample-key.oneshot {
+    background: var(--key-special);
+    color: var(--accent);
+}
+
+.sample-key.locked {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.theme-code {
+    overflow: hidden;
+    color: var(--text);
+    font-family: var(--preview-font-family);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.theme-code .muted {
+    color: var(--muted);
+}
+
 /* ---- Keyboard ----------------------------------------------------------- */
 
 .keyboard {
+    /* Key label size and gap; phones in landscape and a keyboard that fills a
+     * share of the window change them. */
+    --key-label: var(--key-font-size);
+    --key-gap: var(--gap);
+
     display: flex;
     flex-direction: column;
-    gap: var(--gap);
-    padding: var(--gap);
-    padding-bottom: max(var(--gap), env(safe-area-inset-bottom));
+    align-self: center;
+    width: 100%;
+    gap: var(--key-gap);
+    padding: var(--key-gap);
+    padding-bottom: max(var(--key-gap), env(safe-area-inset-bottom));
     background: var(--panel);
     user-select: none;
     -webkit-user-select: none;
@@ -474,18 +563,74 @@ code {
     touch-action: none;
 }
 
+/* Width "auto": the whole window, but not wider than a comfortable reach. */
 @media (min-width: 900px) {
     .keyboard {
-        align-self: center;
-        width: 100%;
         max-width: 1100px;
         border-radius: var(--radius) var(--radius) 0 0;
     }
 }
 
+.app[data-width] .keyboard {
+    width: var(--keyboard-width);
+    max-width: none;
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.app[data-align="left"] .keyboard {
+    align-self: flex-start;
+}
+
+.app[data-align="right"] .keyboard {
+    align-self: flex-end;
+}
+
+/* Height as a share of the window: the keyboard takes that share (less, if the
+ * top bar needs the room) and rows and keys stretch to fill it. */
+.app[data-fill] .keyboard {
+    flex: 0 1 var(--keyboard-height);
+    min-height: 0;
+}
+
+.app[data-fill] .row {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+.app[data-fill] .key {
+    height: auto;
+}
+
+/* Labels grow with the keys: a third of a row's height, but no more than a
+ * typical key's width allows, the same on every key. The keyboard sets --rows
+ * and --cols (the widest row, in key widths). */
+@supports (container-type: size) {
+    .app[data-fill] .keyboard {
+        container-type: size;
+    }
+
+    .app[data-fill] .key {
+        --key-label: min(
+            max(var(--key-font-size), calc(34cqh / var(--rows, 5))),
+            calc(42cqw / var(--cols, 10)),
+            48px
+        );
+    }
+}
+
+/* A keyboard that fills the window leaves no room for the preview. */
+.app[data-fill="full"] .preview {
+    display: none;
+}
+
+/* The settings panel keeps room to work in next to a tall keyboard. */
+.app[data-fill] .settings {
+    min-height: min(50%, 420px);
+}
+
 .row {
     display: flex;
-    gap: var(--gap);
+    gap: var(--key-gap);
 }
 
 .key {
@@ -497,12 +642,13 @@ code {
     min-width: 0;
     height: var(--key-height);
     padding: 0 2px;
-    border: none;
+    border: 1px solid var(--key-border);
     border-radius: var(--radius);
     background: var(--key);
-    color: var(--text);
+    color: var(--key-text);
     font: inherit;
-    font-size: var(--key-font);
+    font-family: var(--key-font-family);
+    font-weight: var(--key-font-weight);
     cursor: pointer;
 }
 
@@ -510,6 +656,7 @@ code {
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
+    font-size: var(--key-label);
 }
 
 .key .hint {
@@ -517,7 +664,7 @@ code {
     top: 2px;
     right: 4px;
     color: var(--muted);
-    font-size: calc(var(--key-font) * 0.6);
+    font-size: calc(var(--key-label) * 0.6);
     line-height: 1;
     pointer-events: none;
 }
@@ -531,8 +678,13 @@ code {
 .key.mod,
 .key.layer {
     background: var(--key-special);
-    color: var(--muted);
-    font-size: calc(var(--key-font) * 0.8);
+    color: var(--key-special-text);
+}
+
+.key.special .label,
+.key.mod .label,
+.key.layer .label {
+    font-size: calc(var(--key-label) * 0.8);
 }
 
 .key.special:active,
@@ -542,8 +694,8 @@ code {
     background: var(--key-pressed);
 }
 
-.key.op {
-    font-size: calc(var(--key-font) * 0.85);
+.key.op .label {
+    font-size: calc(var(--key-label) * 0.85);
 }
 
 .key.oneshot,
@@ -554,6 +706,21 @@ code {
 
 .key.locked,
 .key.locked.pressed {
+    border-color: var(--accent);
     color: var(--on-accent);
     background: var(--accent);
+}
+
+/* ---- Phones in landscape ------------------------------------------------ */
+
+/* Keep the preview visible above five rows of keys. */
+@media (orientation: landscape) and (max-height: 500px) {
+    .app {
+        --key-height: 40px;
+    }
+
+    .keyboard {
+        --key-label: min(var(--key-font-size), 13px);
+        --key-gap: min(var(--gap), 3px);
+    }
 }

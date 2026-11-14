@@ -26,6 +26,8 @@ preview, on Ubuntu desktop and on an Android phone (running as an app).
 - [x] `settings.toml` and a settings screen: theme, long-press and repeat timing, swipe step, key size, style overrides
 - [x] Modular layouts: sections switched on or off and reordered per profile; presets; a profile menu that can be reordered and trimmed
 - [x] Light theme and theme variables
+- [x] Themes as JSON files (colours and fonts): 24 built in, user themes in `themes/`, a theme list drawn in each theme, separate light and dark themes when following the system
+- [x] Keyboard width, height and position as a share of the window, up to a full-window keyboard that resizes with it
 - [x] Responsive key sizing for phone portrait and landscape, tablet and desktop
 - [x] Property tests for the engine with `proptest`
 

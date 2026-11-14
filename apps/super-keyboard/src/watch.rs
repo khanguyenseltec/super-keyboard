@@ -1,4 +1,5 @@
-//! Live reload: picks up edits to `settings.toml` and `layouts/*.toml`.
+//! Live reload: picks up edits to `settings.toml`, `layouts/*.toml` and
+//! `themes/*.json`.
 
 use std::time::Duration;
 

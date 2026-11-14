@@ -1,0 +1,42 @@
+{
+  "title": "Dracula",
+  "description": "Purple and pink on charcoal, after the Dracula palette (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#282a36",
+    "panel": "#21222c",
+    "key": "#44475a",
+    "key-special": "#343746",
+    "key-pressed": "#565b73",
+    "key-border": "transparent",
+    "text": "#f8f8f2",
+    "key-text": "#f8f8f2",
+    "key-special-text": "#c3c7dc",
+    "muted": "#c3c7dc",
+    "accent": "#bd93f9",
+    "on-accent": "#21222c",
+    "selection": "#bd93f94d",
+    "warning": "#ffb86c"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Fira Code", "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Fira Code", "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["Fira Code", "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "6px",
+    "gap": "4px"
+  }
+}

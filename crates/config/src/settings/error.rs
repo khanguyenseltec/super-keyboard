@@ -12,8 +12,11 @@ pub enum SettingsError {
     /// Not valid TOML, found while editing the file.
     #[error("{0}")]
     Edit(#[from] toml_edit::TomlError),
-    #[error("`theme` must be \"system\", \"light\" or \"dark\", not {0:?}")]
-    UnknownTheme(String),
+    #[error(
+        "`{field}` must be {}a theme's name (letters, digits, `-` and `_`), not {name:?}",
+        if *field == "theme" { "\"system\" or " } else { "" }
+    )]
+    InvalidThemeName { field: &'static str, name: String },
     #[error("`profile` must not be empty")]
     EmptyProfile,
     #[error("profile name `{0}` may only use letters, digits, `-` and `_`")]
@@ -28,8 +31,13 @@ pub enum SettingsError {
         value: i64,
         limits: Limits,
     },
-    #[error("`keys.height` must be \"auto\" or a number of pixels")]
-    InvalidHeight,
+    #[error(
+        "`{field}` must be \"auto\" or {}",
+        if field.starts_with("keys.") { "a number of pixels" } else { "a percentage of the window" }
+    )]
+    NotAutoOrNumber { field: &'static str },
+    #[error("`keyboard.align` must be \"center\", \"left\" or \"right\", not {0:?}")]
+    UnknownAlign(String),
     #[error("unknown style variable `{path}` (known: {known})")]
     UnknownStyleVar { path: String, known: String },
     #[error("`{path}`: {reason}")]

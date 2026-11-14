@@ -5025,6 +5025,7 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "serde",
+ "serde_json",
  "super-keyboard-core",
  "tempfile",
  "thiserror 2.0.21",

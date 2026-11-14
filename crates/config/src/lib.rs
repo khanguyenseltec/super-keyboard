@@ -4,14 +4,18 @@
 //! (`~/.config/super-keyboard` on Linux, see [`ConfigDir::detect`]):
 //!
 //! ```text
-//! settings.toml        profile, theme, key timing and size, style, profile menu, profiles
+//! settings.toml        profile, theme, key timing and size, keyboard size, style,
+//!                      profile menu, profiles
 //! layouts/*.toml       user layouts; `layouts/dev.toml` replaces the built-in `dev`
+//! themes/*.json        user themes; `themes/nord.json` replaces the built-in `nord`
 //! ```
 //!
 //! - [`settings`]: the [`Settings`] model, its file format, and
 //!   [`settings::SettingsDocument`] for saving changes without losing comments.
-//! - [`style`]: colour and size overrides ([`Style`]), validated so a settings
-//!   file can only ever set safe CSS values.
+//! - [`style`]: colour, font and size overrides ([`Style`]), validated so a
+//!   settings file can only ever set safe CSS values.
+//! - [`theme`]: themes as JSON ([`Theme`]), the built-in ones, and the
+//!   [`ThemeLibrary`] of built-in and user themes.
 //! - [`library`]: built-in and user layouts by id ([`LayoutLibrary`]).
 //! - [`profile`]: profiles (a layout plus an arrangement of its sections), the
 //!   presets that ship with the app, and the [`ProfileCatalog`] the menu shows.
@@ -29,12 +33,17 @@ pub mod library;
 pub mod profile;
 pub mod settings;
 pub mod style;
+pub mod theme;
 mod user_config;
 
 pub use dir::ConfigDir;
 pub use fingerprint::Fingerprint;
 pub use library::{LayoutEntry, LayoutId, LayoutLibrary, LayoutOrigin};
 pub use profile::{DEFAULT_PROFILE, Profile, ProfileCatalog, ProfileOrigin, ProfileSpec};
-pub use settings::{KeySettings, Limits, PreviewSettings, Settings, SettingsError, ThemeMode};
-pub use style::{Style, StyleValue, StyleVar, ValueKind};
-pub use user_config::{Problem, SaveError, UserConfig};
+pub use settings::{
+    Align, KeySettings, KeyboardSettings, Limits, PreviewSettings, Settings, SettingsError,
+    ThemeChoice, ThemeSettings,
+};
+pub use style::{FontRole, Style, StyleValue, StyleVar, ValueKind};
+pub use theme::{Appearance, Theme, ThemeEntry, ThemeError, ThemeLibrary, ThemeOrigin};
+pub use user_config::{ActiveTheme, Problem, SaveError, UserConfig};

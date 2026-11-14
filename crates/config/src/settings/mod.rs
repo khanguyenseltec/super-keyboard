@@ -1,9 +1,11 @@
-//! `settings.toml`: the profile, theme, key timing and size, style, the profile
-//! menu and the user's profiles.
+//! `settings.toml`: the profile, theme, key timing and size, keyboard size,
+//! style, the profile menu and the user's profiles.
 //!
 //! ```toml
 //! profile = "coding"    # a preset, one of [[profiles]], or a layout's file name
-//! theme = "system"      # "system", "light" or "dark"
+//! theme = "system"      # "system", or a theme's name (see crate::theme)
+//! light-theme = "light" # the themes "system" switches between
+//! dark-theme = "nord"
 //!
 //! [keys]
 //! hold-delay = 300      # milliseconds before a long-press fires
@@ -11,6 +13,11 @@
 //! repeat-rate = 30      # repeats per second
 //! swipe-step = 12       # pixels of drag per cursor step on the space bar
 //! height = 52           # key height in pixels; leave out to fit the screen
+//!
+//! [keyboard]
+//! width = 80            # percent of the window width; leave out for the full width
+//! height = 45           # percent of the window height the keyboard fills
+//! align = "center"      # "center", "left" or "right"
 //!
 //! [preview]
 //! show-log = true
@@ -42,15 +49,16 @@ use std::{fmt, time::Duration};
 
 use super_keyboard_core::{Arrangement, GestureConfig};
 
-use crate::{profile::ProfileSpec, style::Style};
+use crate::{profile::ProfileSpec, style::Style, theme::Appearance};
 
 /// Everything `settings.toml` can set.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Settings {
     /// The profile to use, by name. `None` is the default profile.
     pub profile: Option<String>,
-    pub theme: ThemeMode,
+    pub theme: ThemeSettings,
     pub keys: KeySettings,
+    pub keyboard: KeyboardSettings,
     pub preview: PreviewSettings,
     pub style: Style,
     /// The order of the profile menu, and which profiles it hides.
@@ -84,43 +92,76 @@ impl Settings {
     }
 }
 
-/// Light or dark.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-pub enum ThemeMode {
-    /// Follow the desktop or phone setting.
+/// Which theme to show: `theme`, `light-theme` and `dark-theme`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ThemeSettings {
+    pub choice: ThemeChoice,
+    /// The theme [`ThemeChoice::System`] shows while the system is light.
+    pub light: String,
+    /// The theme [`ThemeChoice::System`] shows while the system is dark.
+    pub dark: String,
+}
+
+impl ThemeSettings {
+    /// The theme `System` uses for `appearance`.
+    pub fn for_appearance(&self, appearance: Appearance) -> &str {
+        match appearance {
+            Appearance::Light => &self.light,
+            Appearance::Dark => &self.dark,
+        }
+    }
+
+    /// Sets the theme `System` uses for `appearance`.
+    pub fn set_for_appearance(&mut self, appearance: Appearance, theme: String) {
+        match appearance {
+            Appearance::Light => self.light = theme,
+            Appearance::Dark => self.dark = theme,
+        }
+    }
+}
+
+impl Default for ThemeSettings {
+    fn default() -> Self {
+        Self {
+            choice: ThemeChoice::System,
+            light: Appearance::Light.default_theme().to_owned(),
+            dark: Appearance::Dark.default_theme().to_owned(),
+        }
+    }
+}
+
+/// The `theme` setting.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub enum ThemeChoice {
+    /// Follow the desktop or phone: the light theme by day, the dark one by
+    /// night.
     #[default]
     System,
-    Light,
-    Dark,
+    /// Always this theme, by name.
+    Named(String),
 }
 
-impl ThemeMode {
-    pub const ALL: [Self; 3] = [Self::System, Self::Light, Self::Dark];
+impl ThemeChoice {
+    pub const SYSTEM: &str = "system";
 
-    /// The name used in `settings.toml`.
-    pub fn name(self) -> &'static str {
+    /// The value used in `settings.toml`.
+    pub fn name(&self) -> &str {
         match self {
-            Self::System => "system",
-            Self::Light => "light",
-            Self::Dark => "dark",
+            Self::System => Self::SYSTEM,
+            Self::Named(name) => name,
         }
     }
 
-    pub fn from_name(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|mode| mode.name() == name)
-    }
-
-    /// A label for settings screens.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::System => "System",
-            Self::Light => "Light",
-            Self::Dark => "Dark",
+    pub fn from_name(name: &str) -> Self {
+        if name == Self::SYSTEM {
+            Self::System
+        } else {
+            Self::Named(name.to_owned())
         }
     }
 }
 
-impl fmt::Display for ThemeMode {
+impl fmt::Display for ThemeChoice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.name())
     }
@@ -214,6 +255,73 @@ impl Default for KeySettings {
     }
 }
 
+/// How much of the window the keyboard takes, and where it sits.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct KeyboardSettings {
+    /// Percent of the window width. `None` is the full width, at most 1100
+    /// pixels on wide screens.
+    pub width_pct: Option<u32>,
+    /// Percent of the window height the keyboard fills, with keys stretched to
+    /// fill it. `None` sizes rows by [`KeySettings::height_px`].
+    pub height_pct: Option<u32>,
+    /// Where a keyboard narrower than the window sits.
+    pub align: Align,
+}
+
+impl KeyboardSettings {
+    pub const WIDTH_PCT: Limits = Limits {
+        min: 40,
+        max: 100,
+        default: 80,
+    };
+    pub const HEIGHT_PCT: Limits = Limits {
+        min: 20,
+        max: 100,
+        default: 40,
+    };
+
+    /// Whether the keyboard fills the whole window below the top bar, leaving
+    /// no room for the preview.
+    pub fn fills_window(&self) -> bool {
+        self.height_pct == Some(Self::HEIGHT_PCT.max)
+    }
+}
+
+/// Where a keyboard narrower than the window sits.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum Align {
+    #[default]
+    Center,
+    Left,
+    Right,
+}
+
+impl Align {
+    pub const ALL: [Self; 3] = [Self::Center, Self::Left, Self::Right];
+
+    /// The name used in `settings.toml`.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Center => "center",
+            Self::Left => "left",
+            Self::Right => "right",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|align| align.name() == name)
+    }
+
+    /// A label for settings screens.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Center => "Centre",
+            Self::Left => "Left",
+            Self::Right => "Right",
+        }
+    }
+}
+
 /// The in-app preview panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PreviewSettings {
@@ -250,13 +358,19 @@ mod tests {
         let settings = Settings::from_toml(
             r##"
             profile = "mine"
-            theme = "light"
+            theme = "nord"
+            light-theme = "paper"
+            dark-theme = "dracula"
             [keys]
             hold-delay = 500
             repeat-delay = 250
             repeat-rate = 20
             swipe-step = 8
             height = 56
+            [keyboard]
+            width = 75
+            height = 100
+            align = "left"
             [preview]
             show-log = false
             [style]
@@ -269,7 +383,24 @@ mod tests {
         )
         .unwrap();
         assert_eq!(settings.profile.as_deref(), Some("mine"));
-        assert_eq!(settings.theme, ThemeMode::Light);
+        assert_eq!(
+            settings.theme,
+            ThemeSettings {
+                choice: ThemeChoice::Named("nord".into()),
+                light: "paper".into(),
+                dark: "dracula".into(),
+            }
+        );
+        assert_eq!(settings.theme.for_appearance(Appearance::Light), "paper");
+        assert_eq!(
+            settings.keyboard,
+            KeyboardSettings {
+                width_pct: Some(75),
+                height_pct: Some(100),
+                align: Align::Left,
+            }
+        );
+        assert!(settings.keyboard.fills_window());
         assert_eq!(
             settings.keys,
             KeySettings {
@@ -306,9 +437,25 @@ mod tests {
     }
 
     #[test]
-    fn theme_names_round_trip() {
-        for mode in ThemeMode::ALL {
-            assert_eq!(ThemeMode::from_name(mode.name()), Some(mode));
+    fn names_round_trip() {
+        for choice in [ThemeChoice::System, ThemeChoice::Named("nord".into())] {
+            assert_eq!(ThemeChoice::from_name(choice.name()), choice);
         }
+        for align in Align::ALL {
+            assert_eq!(Align::from_name(align.name()), Some(align));
+        }
+    }
+
+    #[test]
+    fn system_follows_the_light_and_dark_themes() {
+        let mut theme = ThemeSettings::default();
+        assert_eq!(theme.choice, ThemeChoice::System);
+        assert_eq!(theme.for_appearance(Appearance::Dark), "dark");
+        theme.set_for_appearance(Appearance::Dark, "nord".into());
+        theme.set_for_appearance(Appearance::Light, "paper".into());
+        assert_eq!(
+            (theme.light.as_str(), theme.dark.as_str()),
+            ("paper", "nord")
+        );
     }
 }

@@ -15,6 +15,7 @@ pub struct Fingerprint(Vec<(PathBuf, u64, Option<SystemTime>)>);
 impl Fingerprint {
     pub fn scan(dir: &ConfigDir) -> Self {
         let mut files = dir.layout_files().unwrap_or_default();
+        files.extend(dir.theme_files().unwrap_or_default());
         files.push(dir.settings_file());
         Self(
             files
@@ -59,5 +60,8 @@ mod tests {
 
         fs::remove_file(dir.layouts_dir().join("a.toml")).unwrap();
         assert_eq!(Fingerprint::scan(&dir), with_settings);
+
+        dir.create_theme_file("mine", "{}").unwrap();
+        assert_ne!(Fingerprint::scan(&dir), with_settings);
     }
 }

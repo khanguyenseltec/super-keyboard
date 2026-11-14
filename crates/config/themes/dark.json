@@ -1,0 +1,42 @@
+{
+  "title": "Dark",
+  "description": "The default dark theme: cool greys and a soft blue accent.",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#0f1115",
+    "panel": "#171a21",
+    "key": "#232833",
+    "key-special": "#1c2029",
+    "key-pressed": "#323a49",
+    "key-border": "transparent",
+    "text": "#e6e9ef",
+    "key-text": "#e6e9ef",
+    "key-special-text": "#8b93a3",
+    "muted": "#8b93a3",
+    "accent": "#7aa2f7",
+    "on-accent": "#0f1115",
+    "selection": "#7aa2f759",
+    "warning": "#e0af68"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "6px",
+    "gap": "4px"
+  }
+}

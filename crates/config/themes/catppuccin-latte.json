@@ -1,0 +1,42 @@
+{
+  "title": "Catppuccin Latte",
+  "description": "Milky pastels with a mauve accent, after Catppuccin Latte (MIT).",
+  "appearance": "light",
+  "colors": {
+    "bg": "#eff1f5",
+    "panel": "#dce0e8",
+    "key": "#f9fafc",
+    "key-special": "#e3e6ed",
+    "key-pressed": "#ccd0da",
+    "key-border": "transparent",
+    "text": "#3c3f58",
+    "key-text": "#3c3f58",
+    "key-special-text": "#575a72",
+    "muted": "#575a72",
+    "accent": "#7027d4",
+    "on-accent": "#ffffff",
+    "selection": "#8839ef33",
+    "warning": "#a0480a"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Inter", "Nunito", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Cascadia Code", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "10px",
+    "gap": "4px"
+  }
+}

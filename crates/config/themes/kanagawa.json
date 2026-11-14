@@ -1,0 +1,42 @@
+{
+  "title": "Kanagawa",
+  "description": "Ink and wave blues from Hokusai's print, after Kanagawa by rebelot (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#1f1f28",
+    "panel": "#16161d",
+    "key": "#2a2a37",
+    "key-special": "#223249",
+    "key-pressed": "#363646",
+    "key-border": "transparent",
+    "text": "#dcd7ba",
+    "key-text": "#dcd7ba",
+    "key-special-text": "#b8b4a0",
+    "muted": "#b8b4a0",
+    "accent": "#7fb4ca",
+    "on-accent": "#16161d",
+    "selection": "#7e9cd84d",
+    "warning": "#ffa066"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Inter", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "4px",
+    "gap": "4px"
+  }
+}

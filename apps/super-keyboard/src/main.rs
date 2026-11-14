@@ -4,7 +4,7 @@
 //! - [`state`]: app-wide state in context: configuration, keyboard, open panel.
 //! - [`controller`]: feeds pointer events to the engine and output to the preview.
 //! - [`components`]: the top bar, notices, preview, settings panel and keys.
-//! - [`style`]: user style overrides as CSS.
+//! - [`style`]: the active theme and user style overrides as CSS.
 //! - [`watch`]: live reload of the config directory.
 //! - [`time`]: the clock and timer gestures run on.
 //!

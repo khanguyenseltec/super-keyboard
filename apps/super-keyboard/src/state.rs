@@ -1,7 +1,9 @@
 //! App-wide state, shared with components through context.
 
 use dioxus::prelude::*;
-use super_keyboard_config::{ConfigDir, ProfileOrigin, ProfileSpec, Settings, UserConfig};
+use super_keyboard_config::{
+    Appearance, ConfigDir, ProfileOrigin, ProfileSpec, Settings, ThemeChoice, UserConfig,
+};
 use super_keyboard_core::{Arrangement, Layout};
 
 use crate::controller::KeyboardController;
@@ -198,6 +200,50 @@ impl AppState {
         self.update_settings(|settings| settings.menu.move_item(&names, &name, by));
     }
 
+    /// Uses theme `id`. While following the system, it becomes the theme for
+    /// the system's light or dark mode, whichever `id` is made for.
+    pub fn choose_theme(&mut self, id: String) {
+        let Some(appearance) = self
+            .config
+            .peek()
+            .themes
+            .get(&id)
+            .map(|entry| entry.theme.appearance)
+        else {
+            return;
+        };
+        self.update_settings(|settings| match settings.theme.choice {
+            ThemeChoice::System => settings.theme.set_for_appearance(appearance, id),
+            ThemeChoice::Named(_) => settings.theme.choice = ThemeChoice::Named(id),
+        });
+    }
+
+    /// Follows the system's light and dark mode, or stops. Following starts
+    /// with the theme in use in its slot; stopping keeps the dark theme.
+    pub fn follow_system(&mut self, follow: bool) {
+        let fixed = match &self.config.peek().settings.theme.choice {
+            ThemeChoice::Named(name) => self
+                .config
+                .peek()
+                .themes
+                .get(name)
+                .map(|entry| (entry.id.clone(), entry.theme.appearance)),
+            ThemeChoice::System => None,
+        };
+        self.update_settings(|settings| {
+            let theme = &mut settings.theme;
+            if follow {
+                if let Some((id, appearance)) = fixed {
+                    theme.set_for_appearance(appearance, id);
+                }
+                theme.choice = ThemeChoice::System;
+            } else if theme.choice == ThemeChoice::System {
+                theme.choice =
+                    ThemeChoice::Named(theme.for_appearance(Appearance::Dark).to_owned());
+            }
+        });
+    }
+
     pub fn toggle_panel(&mut self, panel: Panel) {
         let next = if *self.panel.peek() == panel {
             Panel::Preview
@@ -315,6 +361,36 @@ mod tests {
                 .map(|(p, shown)| format!("{}{}", p.name(), if shown { "" } else { "-" }))
                 .collect();
             assert_eq!(menu, ["coding", "coding-numbers-", "compact", "terminal"]);
+        });
+    }
+
+    #[test]
+    fn themes_are_chosen_per_appearance_while_following_the_system() {
+        with_state(AppEnv::isolated(), |mut state| {
+            state.choose_theme("nord".into());
+            state.choose_theme("paper".into());
+            state.choose_theme("no-such-theme".into());
+            let theme = state.config.peek().settings.theme.clone();
+            assert_eq!(theme.choice, ThemeChoice::System);
+            assert_eq!(
+                (theme.light.as_str(), theme.dark.as_str()),
+                ("paper", "nord")
+            );
+
+            state.follow_system(false);
+            assert_eq!(
+                state.config.peek().settings.theme.choice,
+                ThemeChoice::Named("nord".into())
+            );
+            state.choose_theme("solarized-light".into());
+            state.follow_system(true);
+            let theme = state.config.peek().settings.theme.clone();
+            assert_eq!(theme.choice, ThemeChoice::System);
+            assert_eq!(
+                theme.light, "solarized-light",
+                "the fixed theme keeps its slot"
+            );
+            assert_eq!(theme.dark, "nord");
         });
     }
 

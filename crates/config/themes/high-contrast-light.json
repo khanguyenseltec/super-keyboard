@@ -1,0 +1,42 @@
+{
+  "title": "High Contrast Light",
+  "description": "Black on white with outlined keys, deep blue accent and bold labels, for low vision and bright sun.",
+  "appearance": "light",
+  "colors": {
+    "bg": "#ffffff",
+    "panel": "#ffffff",
+    "key": "#ffffff",
+    "key-special": "#ffffff",
+    "key-pressed": "#cccccc",
+    "key-border": "#000000",
+    "text": "#000000",
+    "key-text": "#000000",
+    "key-special-text": "#262626",
+    "muted": "#262626",
+    "accent": "#0033b3",
+    "on-accent": "#ffffff",
+    "selection": "#0033b340",
+    "warning": "#7a3300"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Atkinson Hyperlegible", "Verdana", "DejaVu Sans", "Inter", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "14px",
+      "weight": 500
+    },
+    "keys": {
+      "family": ["Atkinson Hyperlegible", "Verdana", "DejaVu Sans", "Inter", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "clamp(15px, 0.85rem + 0.7vw, 21px)",
+      "weight": 700
+    },
+    "preview": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "16px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "4px",
+    "gap": "5px"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "title": "Solarized Dark",
+  "description": "Teal night with precise accents, after Solarized by Ethan Schoonover (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#002b36",
+    "panel": "#00212b",
+    "key": "#073642",
+    "key-special": "#04303b",
+    "key-pressed": "#0e4a59",
+    "key-border": "transparent",
+    "text": "#eee8d5",
+    "key-text": "#eee8d5",
+    "key-special-text": "#93a1a1",
+    "muted": "#93a1a1",
+    "accent": "#6cb6eb",
+    "on-accent": "#002b36",
+    "selection": "#268bd259",
+    "warning": "#e0b341"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Source Sans 3", "Source Sans Pro", "Inter", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Source Code Pro", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["Source Code Pro", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "6px",
+    "gap": "4px"
+  }
+}

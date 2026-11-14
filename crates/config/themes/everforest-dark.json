@@ -1,0 +1,42 @@
+{
+  "title": "Everforest Dark",
+  "description": "Soft forest greens, easy on the eyes, after Everforest by sainnhe (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#2d353b",
+    "panel": "#232a2e",
+    "key": "#3d484d",
+    "key-special": "#343f44",
+    "key-pressed": "#4f5b58",
+    "key-border": "transparent",
+    "text": "#d3c6aa",
+    "key-text": "#ece4d0",
+    "key-special-text": "#b4bcb1",
+    "muted": "#b4bcb1",
+    "accent": "#a7c080",
+    "on-accent": "#232a2e",
+    "selection": "#a7c0804d",
+    "warning": "#dbbc7f"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Hack", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Hack", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["Hack", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "6px",
+    "gap": "4px"
+  }
+}

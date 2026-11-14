@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// The directory that holds `settings.toml` and `layouts/`.
+/// The directory that holds `settings.toml`, `layouts/` and `themes/`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConfigDir {
     root: PathBuf,
@@ -50,6 +50,10 @@ impl ConfigDir {
         self.root.join("layouts")
     }
 
+    pub fn themes_dir(&self) -> PathBuf {
+        self.root.join("themes")
+    }
+
     /// A path for messages: relative to the config directory when inside it.
     pub fn display_path(&self, path: &Path) -> String {
         path.strip_prefix(&self.root)
@@ -75,20 +79,26 @@ impl ConfigDir {
 
     /// The `*.toml` files in `layouts/`, sorted by path. Missing directory: none.
     pub fn layout_files(&self) -> io::Result<Vec<PathBuf>> {
-        let entries = match fs::read_dir(self.layouts_dir()) {
-            Ok(entries) => entries,
-            Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-            Err(err) => return Err(err),
-        };
-        let mut files = Vec::new();
-        for entry in entries {
-            let path = entry?.path();
-            if path.extension().is_some_and(|ext| ext == "toml") && path.is_file() {
-                files.push(path);
-            }
-        }
-        files.sort();
-        Ok(files)
+        files_with_extension(&self.layouts_dir(), "toml")
+    }
+
+    /// The `*.json` files in `themes/`, sorted by path. Missing directory: none.
+    pub fn theme_files(&self) -> io::Result<Vec<PathBuf>> {
+        files_with_extension(&self.themes_dir(), "json")
+    }
+
+    /// Writes `themes/<id>.json`, creating the directory if needed. An existing
+    /// file is never overwritten: it may hold the user's work.
+    pub fn create_theme_file(&self, id: &str, contents: &str) -> io::Result<PathBuf> {
+        let dir = self.themes_dir();
+        fs::create_dir_all(&dir)?;
+        let path = dir.join(format!("{id}.json"));
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)?;
+        io::Write::write_all(&mut file, contents.as_bytes())?;
+        Ok(path)
     }
 
     /// Reads a file in the config directory as UTF-8, refusing oversized files.
@@ -102,6 +112,23 @@ impl ConfigDir {
         }
         fs::read_to_string(path)
     }
+}
+
+fn files_with_extension(dir: &Path, extension: &str) -> io::Result<Vec<PathBuf>> {
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(err) => return Err(err),
+    };
+    let mut files = Vec::new();
+    for entry in entries {
+        let path = entry?.path();
+        if path.extension().is_some_and(|ext| ext == extension) && path.is_file() {
+            files.push(path);
+        }
+    }
+    files.sort();
+    Ok(files)
 }
 
 fn read_optional(path: &Path) -> io::Result<Option<String>> {
@@ -155,6 +182,7 @@ mod tests {
                 .ends_with("super-keyboard/settings.toml")
         );
         assert!(dir.layouts_dir().ends_with("super-keyboard/layouts"));
+        assert!(dir.themes_dir().ends_with("super-keyboard/themes"));
         let file = dir.layouts_dir().join("mine.toml");
         assert_eq!(
             dir.display_path(&file),
@@ -169,6 +197,7 @@ mod tests {
         let dir = ConfigDir::new(tmp.path().join("nothing-here"));
         assert_eq!(dir.read_settings().unwrap(), None);
         assert!(dir.layout_files().unwrap().is_empty());
+        assert!(dir.theme_files().unwrap().is_empty());
     }
 
     #[test]
@@ -193,6 +222,19 @@ mod tests {
             .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
             .collect();
         assert_eq!(names, ["a.toml", "b.toml"]);
+    }
+
+    #[test]
+    fn creates_theme_files_without_overwriting() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = ConfigDir::new(tmp.path().join("cfg"));
+        let path = dir.create_theme_file("mine", "{}").unwrap();
+        assert_eq!(path, dir.themes_dir().join("mine.json"));
+        fs::write(dir.themes_dir().join("notes.txt"), "").unwrap();
+        assert_eq!(dir.theme_files().unwrap(), std::slice::from_ref(&path));
+        let err = dir.create_theme_file("mine", "new").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::AlreadyExists);
+        assert_eq!(fs::read_to_string(path).unwrap(), "{}");
     }
 
     #[test]

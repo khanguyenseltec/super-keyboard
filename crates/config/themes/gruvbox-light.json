@@ -1,0 +1,42 @@
+{
+  "title": "Gruvbox Light",
+  "description": "Retro parchment and earthy ink, after the Gruvbox palette by morhetz (MIT).",
+  "appearance": "light",
+  "colors": {
+    "bg": "#fbf1c7",
+    "panel": "#ebdbb2",
+    "key": "#f9f5d7",
+    "key-special": "#e5d5ab",
+    "key-pressed": "#d5c4a1",
+    "key-border": "transparent",
+    "text": "#282828",
+    "key-text": "#282828",
+    "key-special-text": "#5f564f",
+    "muted": "#5f564f",
+    "accent": "#05596a",
+    "on-accent": "#f9f5d7",
+    "selection": "#07667833",
+    "warning": "#9d3a03"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 600
+    },
+    "preview": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "3px",
+    "gap": "4px"
+  }
+}

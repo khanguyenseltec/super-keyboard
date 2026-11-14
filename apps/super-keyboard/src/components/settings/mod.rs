@@ -1,13 +1,15 @@
-//! The settings panel: tabs for general settings, the sections of the active
-//! profile, and the profiles and their menu.
+//! The settings panel: tabs for general settings, themes, the sections of the
+//! active profile, and the profiles and their menu.
 //!
 //! Changes apply at once and are saved to `settings.toml`, keeping the file's
-//! comments. Styles and layouts are edited as files; the panel says where.
+//! comments. Styles, themes and layouts are edited as files; the panel says
+//! where.
 
 mod fields;
 mod general;
 mod profiles;
 mod sections;
+mod themes;
 
 use dioxus::prelude::*;
 
@@ -15,21 +17,24 @@ use crate::state::AppState;
 use general::GeneralSettings;
 use profiles::ProfilesEditor;
 use sections::SectionsEditor;
+use themes::ThemesEditor;
 
 /// A tab of the settings panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
     General,
+    Themes,
     Sections,
     Profiles,
 }
 
 impl Tab {
-    const ALL: [Self; 3] = [Self::General, Self::Sections, Self::Profiles];
+    const ALL: [Self; 4] = [Self::General, Self::Themes, Self::Sections, Self::Profiles];
 
     fn label(self) -> &'static str {
         match self {
             Self::General => "General",
+            Self::Themes => "Themes",
             Self::Sections => "Sections",
             Self::Profiles => "Profiles",
         }
@@ -66,6 +71,7 @@ pub fn SettingsPanel() -> Element {
             }
             match tab() {
                 Tab::General => rsx! { GeneralSettings {} },
+                Tab::Themes => rsx! { ThemesEditor {} },
                 Tab::Sections => rsx! { SectionsEditor {} },
                 Tab::Profiles => rsx! { ProfilesEditor {} },
             }
@@ -111,6 +117,45 @@ mod tests {
             html.contains(r#"aria-label="Move Number row up""#),
             "{html}"
         );
+    }
+
+    #[test]
+    fn the_themes_tab_draws_every_theme_in_its_own_colours() {
+        let html = render(|| {
+            use_context_provider(|| AppState::load(&AppEnv::isolated()));
+            rsx! { ThemesEditor {} }
+        });
+        let dark = html.find("Dark themes").expect("dark group");
+        let light = html.find("Light themes").expect("light group");
+        let nord = html.find(r#"aria-label="Nord""#).expect("nord");
+        let paper = html.find(r#"aria-label="Paper""#).expect("paper");
+        assert!(dark < nord && nord < light && light < paper, "{html}");
+        assert!(html.contains("--bg:#2e3440;"), "{html}");
+        assert!(html.contains("dark mode"), "{html}");
+        assert!(html.contains("light mode"), "{html}");
+        assert!(
+            html.contains(r#"role="radio" aria-checked=true>follow the system"#),
+            "{html}"
+        );
+        // No config directory: nothing to copy to.
+        assert!(!html.contains("edit a copy"), "{html}");
+        // Font names are quoted in CSS; the attribute escapes the quotes.
+        assert!(
+            html.contains("--font-family:&#34;JetBrains Mono&#34;, "),
+            "{html}"
+        );
+    }
+
+    #[test]
+    fn the_general_tab_sizes_the_keyboard() {
+        let html = render(|| {
+            use_context_provider(|| AppState::load(&AppEnv::isolated()));
+            rsx! { GeneralSettings {} }
+        });
+        for label in ["Keyboard size", "Window share", "Full width", "Position"] {
+            assert!(html.contains(label), "{label}: {html}");
+        }
+        assert!(html.contains("Share of window"), "{html}");
     }
 
     #[test]

@@ -4,9 +4,12 @@ use std::collections::BTreeMap;
 
 use serde::Deserialize;
 
-use super::{KeySettings, Limits, PreviewSettings, Settings, SettingsError, ThemeMode};
+use super::{
+    Align, KeySettings, KeyboardSettings, Limits, PreviewSettings, Settings, SettingsError,
+    ThemeChoice, ThemeSettings,
+};
 use crate::{
-    profile::{ProfileFile, validate_profiles},
+    profile::{ProfileFile, is_valid_name, validate_profiles},
     style::{Style, StyleValue, StyleVar},
 };
 use super_keyboard_core::Arrangement;
@@ -16,8 +19,12 @@ use super_keyboard_core::Arrangement;
 pub(super) struct SettingsFile {
     profile: Option<String>,
     theme: Option<String>,
+    light_theme: Option<String>,
+    dark_theme: Option<String>,
     #[serde(default)]
     keys: KeysFile,
+    #[serde(default)]
+    keyboard: KeyboardFile,
     #[serde(default)]
     preview: PreviewFile,
     #[serde(default)]
@@ -49,14 +56,25 @@ struct KeysFile {
     height: Option<toml::Value>,
 }
 
+/// `[keyboard]`: its share of the window, and where it sits.
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct KeyboardFile {
+    /// `"auto"` or a percentage.
+    width: Option<toml::Value>,
+    /// `"auto"` or a percentage.
+    height: Option<toml::Value>,
+    align: Option<String>,
+}
+
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 struct PreviewFile {
     show_log: Option<bool>,
 }
 
-/// `[style]` holds variables for both themes; `[style.dark]` and
-/// `[style.light]` hold variables for one. (Unknown names land in `both` and are
+/// `[style]` holds variables for every theme; `[style.dark]` and
+/// `[style.light]` hold variables for dark or light themes only. (Unknown names land in `both` and are
 /// reported by validation, so `deny_unknown_fields` is not needed here.)
 #[derive(Debug, Default, Deserialize)]
 struct StyleFile {
@@ -74,14 +92,26 @@ impl SettingsFile {
             Some(profile) if profile.trim().is_empty() => return Err(SettingsError::EmptyProfile),
             profile => profile,
         };
-        let theme = match self.theme {
-            None => ThemeMode::default(),
-            Some(name) => ThemeMode::from_name(&name).ok_or(SettingsError::UnknownTheme(name))?,
+        let defaults = ThemeSettings::default();
+        let theme = ThemeSettings {
+            choice: match self.theme {
+                None => ThemeChoice::System,
+                Some(name) => ThemeChoice::from_name(&theme_name("theme", name)?),
+            },
+            light: match self.light_theme {
+                None => defaults.light,
+                Some(name) => theme_name("light-theme", name)?,
+            },
+            dark: match self.dark_theme {
+                None => defaults.dark,
+                Some(name) => theme_name("dark-theme", name)?,
+            },
         };
         Ok(Settings {
             profile,
             theme,
             keys: self.keys.validate()?,
+            keyboard: self.keyboard.validate()?,
             preview: PreviewSettings {
                 show_log: self
                     .preview
@@ -121,15 +151,50 @@ impl KeysFile {
                 self.swipe_step,
                 KeySettings::SWIPE_STEP_PX,
             )?,
-            height_px: match self.height {
-                None => None,
-                Some(toml::Value::String(word)) if word == "auto" => None,
-                Some(toml::Value::Integer(px)) => {
-                    Some(number("keys.height", Some(px), KeySettings::HEIGHT_PX)?)
-                }
-                Some(_) => return Err(SettingsError::InvalidHeight),
+            height_px: auto_or_number("keys.height", self.height, KeySettings::HEIGHT_PX)?,
+        })
+    }
+}
+
+impl KeyboardFile {
+    fn validate(self) -> Result<KeyboardSettings, SettingsError> {
+        Ok(KeyboardSettings {
+            width_pct: auto_or_number("keyboard.width", self.width, KeyboardSettings::WIDTH_PCT)?,
+            height_pct: auto_or_number(
+                "keyboard.height",
+                self.height,
+                KeyboardSettings::HEIGHT_PCT,
+            )?,
+            align: match self.align {
+                None => Align::default(),
+                Some(name) => Align::from_name(&name).ok_or(SettingsError::UnknownAlign(name))?,
             },
         })
+    }
+}
+
+/// A theme name: `"system"`, or letters, digits, `-` and `_` like a theme's
+/// file name.
+fn theme_name(field: &'static str, name: String) -> Result<String, SettingsError> {
+    let system_allowed = field == "theme";
+    if is_valid_name(&name) && (system_allowed || name != ThemeChoice::SYSTEM) {
+        Ok(name)
+    } else {
+        Err(SettingsError::InvalidThemeName { field, name })
+    }
+}
+
+/// `"auto"` (`None`) or a number within `limits`.
+fn auto_or_number(
+    field: &'static str,
+    value: Option<toml::Value>,
+    limits: Limits,
+) -> Result<Option<u32>, SettingsError> {
+    match value {
+        None => Ok(None),
+        Some(toml::Value::String(word)) if word == "auto" => Ok(None),
+        Some(toml::Value::Integer(n)) => number(field, Some(n), limits).map(Some),
+        Some(_) => Err(SettingsError::NotAutoOrNumber { field }),
     }
 }
 
@@ -190,8 +255,12 @@ mod tests {
         assert!(error("[keys]\nhold = 3").contains("unknown field `hold`"));
         assert!(error("[keys]\nhold-delay = \"slow\"").contains("invalid type"));
         assert_eq!(
-            error("theme = \"blue\""),
-            r#"`theme` must be "system", "light" or "dark", not "blue""#
+            error("theme = \"Solarized Dark\""),
+            r#"`theme` must be "system" or a theme's name (letters, digits, `-` and `_`), not "Solarized Dark""#
+        );
+        assert_eq!(
+            error("dark-theme = \"system\""),
+            r#"`dark-theme` must be a theme's name (letters, digits, `-` and `_`), not "system""#
         );
         assert_eq!(error("profile = \" \""), "`profile` must not be empty");
         assert_eq!(
@@ -226,6 +295,23 @@ mod tests {
             Settings::from_toml("[keys]\nheight = \"auto\"").unwrap(),
             Settings::default()
         );
+        assert_eq!(
+            error("[keyboard]\nwidth = 30"),
+            "`keyboard.width` must be between 40 and 100, not 30"
+        );
+        assert_eq!(
+            error("[keyboard]\nheight = \"50%\""),
+            r#"`keyboard.height` must be "auto" or a percentage of the window"#
+        );
+        assert_eq!(
+            error("[keyboard]\nalign = \"top\""),
+            r#"`keyboard.align` must be "center", "left" or "right", not "top""#
+        );
+        assert!(error("[keyboard]\nsize = 3").contains("unknown field `size`"));
+        assert_eq!(
+            Settings::from_toml("[keyboard]\nwidth = \"auto\"\nheight = \"auto\"").unwrap(),
+            Settings::default()
+        );
         assert!(
             error("[style]\nacent = \"red\"").starts_with("unknown style variable `style.acent`")
         );
@@ -234,6 +320,10 @@ mod tests {
             "`style.dark.bg`: function `url()` is not allowed"
         );
         assert!(error("[style.dim]\nbg = \"red\"").contains("invalid type"));
+        assert_eq!(
+            error("[style]\nfont-family = \"'Fira Code'\""),
+            "`style.font-family`: write font names without quotes, separated by commas"
+        );
     }
 
     #[test]

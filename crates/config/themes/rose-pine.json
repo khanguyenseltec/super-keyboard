@@ -1,0 +1,42 @@
+{
+  "title": "Rosé Pine",
+  "description": "Muted roses and pine on deep plum, after Rosé Pine (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#191724",
+    "panel": "#13111c",
+    "key": "#2a2740",
+    "key-special": "#21202e",
+    "key-pressed": "#403d52",
+    "key-border": "transparent",
+    "text": "#e0def4",
+    "key-text": "#e0def4",
+    "key-special-text": "#a8a4c4",
+    "muted": "#a8a4c4",
+    "accent": "#ebbcba",
+    "on-accent": "#191724",
+    "selection": "#c4a7e74d",
+    "warning": "#f6c177"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Inter", "Rubik", "Ubuntu", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Cascadia Code", "Fira Code", "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "10px",
+    "gap": "4px"
+  }
+}

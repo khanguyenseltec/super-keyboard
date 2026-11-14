@@ -35,8 +35,17 @@ pub const TEMPLATE: &str = r##"# Super Keyboard settings.
 #   sections = { number-row = true }        switched on, or off with false
 profile = "coding"
 
-# Colour theme: "system", "light" or "dark".
+# Theme: "system" follows the desktop or phone, showing light-theme by day and
+# dark-theme by night; or the name of one theme to always show. Built-in themes:
+#   dark: dark, tokyo-night, dracula, nord, gruvbox-dark, solarized-dark,
+#     catppuccin-mocha, one-dark, rose-pine, everforest-dark, kanagawa,
+#     aubergine, oled, amber, phosphor, neon, high-contrast-dark
+#   light: light, solarized-light, gruvbox-light, catppuccin-latte,
+#     rose-pine-dawn, paper, high-contrast-light
+# Add your own as *.json files in themes/ (see docs/CUSTOMIZING.md).
 theme = "system"
+light-theme = "light"
+dark-theme = "dark"
 
 [keys]
 # Milliseconds before a long-press fires a key's hold action (150-1000).
@@ -50,16 +59,32 @@ swipe-step = 12
 # Key height: "auto" sizes keys to the screen, or a number of pixels (32-96).
 height = "auto"
 
+[keyboard]
+# Width: "auto" is the full window, at most 1100 pixels on wide screens; or a
+# percentage of the window width (40-100).
+width = "auto"
+# Height: "auto" makes rows keys.height tall; or a percentage of the window
+# height for the whole keyboard, keys stretched to fill it (20-100). 100 fills
+# the window below the top bar and hides the preview.
+height = "auto"
+# Where a keyboard narrower than the window sits: "center", "left" or "right".
+align = "center"
+
 [preview]
 # Show recent output beside the preview text.
 show-log = true
 
-# Colours and sizes for both themes, then for each theme. Values are CSS colours
-# (#7aa2f7, rgb(...), oklch(...), colour names) and lengths (6px, 0.5rem, calc(...)).
-# Variables: bg, panel, key, key-special, key-pressed, text, muted, accent,
-# on-accent, selection, warning, radius, gap, key-font.
+# Changes to the theme: for every theme, then for dark or light themes only.
+# Values are CSS colours (#7aa2f7, rgb(...), oklch(...), colour names), lengths
+# (6px, 0.5rem, calc(...)), font weights (normal, bold, 500) and installed fonts
+# separated by commas (Fira Code, monospace).
+# Colours: bg, panel, key, key-special, key-pressed, key-border, text, key-text,
+# key-special-text, muted, accent, on-accent, selection, warning.
+# Sizes: radius, gap. Fonts: font-family, font-size, font-weight, and the same
+# with key- (key labels) and preview- (typed text) in front.
 [style]
 # radius = "8px"
+# key-font-family = "Fira Code, monospace"
 
 [style.dark]
 # accent = "#ff9e64"
@@ -105,13 +130,23 @@ impl SettingsDocument {
                 root.remove("profile");
             }
         }
-        let theme = settings.theme;
-        set(
-            root,
-            "theme",
-            Scalar::Str(theme.name().into()),
-            theme == defaults.theme,
-        );
+        let (theme, default_theme) = (&settings.theme, &defaults.theme);
+        let themes = [
+            (
+                "theme",
+                theme.choice.name(),
+                theme.choice == default_theme.choice,
+            ),
+            (
+                "light-theme",
+                &theme.light,
+                theme.light == default_theme.light,
+            ),
+            ("dark-theme", &theme.dark, theme.dark == default_theme.dark),
+        ];
+        for (key, value, is_default) in themes {
+            set(root, key, Scalar::Str(value.to_owned()), is_default);
+        }
 
         let (keys, default_keys) = (&settings.keys, &defaults.keys);
         edit_section(root, "keys", |table| {
@@ -133,6 +168,24 @@ impl SettingsDocument {
                 .height_px
                 .map_or(Scalar::Str("auto".into()), |px| Scalar::Int(px.into()));
             added | set(table, "height", height, keys.height_px.is_none())
+        });
+
+        let keyboard = &settings.keyboard;
+        edit_section(root, "keyboard", |table| {
+            let auto_or = |value: Option<u32>| {
+                value.map_or(Scalar::Str("auto".into()), |n| Scalar::Int(n.into()))
+            };
+            let width = auto_or(keyboard.width_pct);
+            let height = auto_or(keyboard.height_pct);
+            let align = Scalar::Str(keyboard.align.name().into());
+            set(table, "width", width, keyboard.width_pct.is_none())
+                | set(table, "height", height, keyboard.height_pct.is_none())
+                | set(
+                    table,
+                    "align",
+                    align,
+                    keyboard.align == defaults.keyboard.align,
+                )
         });
 
         let show_log = settings.preview.show_log;
@@ -333,7 +386,7 @@ fn edit_section(root: &mut Table, name: &str, edit: impl FnOnce(&mut dyn TableLi
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{KeySettings, ThemeMode};
+    use crate::{Align, KeySettings, KeyboardSettings, ThemeChoice};
 
     fn saved(source: Option<&str>, change: impl FnOnce(&mut Settings)) -> String {
         let mut settings = source.map_or_else(
@@ -364,13 +417,38 @@ mod tests {
             ("Repeats per second", KeySettings::REPEAT_RATE),
             ("Pixels of drag", KeySettings::SWIPE_STEP_PX),
             ("Key height", KeySettings::HEIGHT_PX),
+            (
+                "percentage of the window width",
+                KeyboardSettings::WIDTH_PCT,
+            ),
+            ("fill it", KeyboardSettings::HEIGHT_PCT),
         ];
         for (comment, limits) in ranges {
-            let line = TEMPLATE.lines().find(|l| l.contains(comment)).unwrap();
+            let line = TEMPLATE
+                .lines()
+                .find(|l| l.contains(comment))
+                .unwrap_or_else(|| panic!("{comment}"));
             assert!(
                 line.contains(&format!("({}-{})", limits.min, limits.max)),
                 "{line}"
             );
+        }
+    }
+
+    #[test]
+    fn the_template_lists_every_builtin_theme() {
+        let listed = TEMPLATE
+            .split("theme = \"system\"")
+            .next()
+            .unwrap()
+            .split("Built-in themes:")
+            .nth(1)
+            .unwrap();
+        for (id, _) in crate::theme::BUILTIN {
+            let named = listed
+                .split(|c: char| !(c.is_ascii_alphanumeric() || c == '-'))
+                .any(|word| word == id);
+            assert!(named, "the template does not list `{id}`");
         }
     }
 
@@ -399,7 +477,7 @@ height = 50 # tall keys
 accent = "#ff9e64"
 "##;
         let text = saved(Some(source), |s| {
-            s.theme = ThemeMode::Light;
+            s.theme.choice = ThemeChoice::Named("light".into());
             s.keys.height_px = None;
         });
         assert!(
@@ -440,8 +518,59 @@ accent = "#ff9e64"
     #[test]
     fn refuses_to_edit_a_broken_file() {
         assert!(SettingsDocument::open(Some("theme = ")).is_err());
-        assert!(SettingsDocument::open(Some("theme = \"blue\"")).is_err());
+        assert!(SettingsDocument::open(Some("theme = \"a b\"")).is_err());
         assert!(SettingsDocument::open(Some("  \n")).is_ok());
+    }
+
+    #[test]
+    fn writes_themes_and_the_keyboard_size() {
+        let text = saved(Some("# mine\n"), |s| {
+            s.theme.choice = ThemeChoice::Named("nord".into());
+            s.theme.light = "paper".into();
+            s.keyboard = KeyboardSettings {
+                width_pct: Some(80),
+                height_pct: Some(100),
+                align: Align::Right,
+            };
+        });
+        assert!(
+            text.contains("theme = \"nord\"\nlight-theme = \"paper\"\n"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("dark-theme"),
+            "defaults are not added:\n{text}"
+        );
+        assert!(
+            text.contains("[keyboard]\nwidth = 80\nheight = 100\nalign = \"right\"\n"),
+            "{text}"
+        );
+
+        let text = saved(Some(&text), |s| {
+            s.theme = Default::default();
+            s.keyboard = Default::default();
+        });
+        assert!(
+            text.contains("theme = \"system\"\nlight-theme = \"light\"\n"),
+            "{text}"
+        );
+        assert!(
+            text.contains("width = \"auto\"\nheight = \"auto\"\nalign = \"center\""),
+            "{text}"
+        );
+
+        // Keys added to a file with tables still land at the top level.
+        let text = saved(Some("[keys]\nrepeat-rate = 20\n"), |s| {
+            s.theme.dark = "nord".into();
+            s.keyboard.align = Align::Left;
+        });
+        let dark_theme = text.find("dark-theme = \"nord\"").unwrap();
+        assert!(dark_theme < text.find("[keys]").unwrap(), "{text}");
+        assert!(text.contains("[keyboard]\nalign = \"left\"\n"), "{text}");
+
+        let text = saved(None, |s| s.keyboard.height_pct = Some(45));
+        assert!(text.contains("\nheight = 45\n"), "{text}");
+        assert!(text.contains("# Where a keyboard narrower"), "{text}");
     }
 
     #[test]

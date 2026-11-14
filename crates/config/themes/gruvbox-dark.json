@@ -1,0 +1,42 @@
+{
+  "title": "Gruvbox Dark",
+  "description": "Warm retro browns and yellow, after the Gruvbox palette by morhetz (MIT).",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#282828",
+    "panel": "#1d2021",
+    "key": "#3c3836",
+    "key-special": "#32302f",
+    "key-pressed": "#504945",
+    "key-border": "transparent",
+    "text": "#ebdbb2",
+    "key-text": "#ebdbb2",
+    "key-special-text": "#bdae93",
+    "muted": "#bdae93",
+    "accent": "#fabd2f",
+    "on-accent": "#1d2021",
+    "selection": "#fabd2f47",
+    "warning": "#fe8019"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 600
+    },
+    "preview": {
+      "family": ["Iosevka", "Iosevka Term", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "3px",
+    "gap": "4px"
+  }
+}

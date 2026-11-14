@@ -1,0 +1,42 @@
+{
+  "title": "Amber Terminal",
+  "description": "A glowing amber CRT, square keys and a terminal font.",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#120c02",
+    "panel": "#0b0701",
+    "key": "#1f1505",
+    "key-special": "#170f03",
+    "key-pressed": "#38270b",
+    "key-border": "#4a3208",
+    "text": "#ffb000",
+    "key-text": "#ffb000",
+    "key-special-text": "#d99a1e",
+    "muted": "#d99a1e",
+    "accent": "#ffd27a",
+    "on-accent": "#120c02",
+    "selection": "#ffb00040",
+    "warning": "#ff7849"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["VT323", "Terminus", "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["VT323", "Terminus", "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["VT323", "Terminus", "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "2px",
+    "gap": "5px"
+  }
+}

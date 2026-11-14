@@ -1,0 +1,42 @@
+{
+  "title": "Aubergine",
+  "description": "Aubergine and orange in the Ubuntu fonts, at home on the Ubuntu desktop.",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#2c001e",
+    "panel": "#22001a",
+    "key": "#45122f",
+    "key-special": "#3a0a28",
+    "key-pressed": "#5e2750",
+    "key-border": "transparent",
+    "text": "#f7f0f4",
+    "key-text": "#f7f0f4",
+    "key-special-text": "#d6b9cb",
+    "muted": "#d6b9cb",
+    "accent": "#ff7b45",
+    "on-accent": "#22001a",
+    "selection": "#e9542059",
+    "warning": "#f6c177"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Ubuntu Sans", "Ubuntu", "Inter", "Cantarell", "Roboto", "Noto Sans", "system-ui", "sans-serif"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Ubuntu Sans Mono", "Ubuntu Mono", "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 500
+    },
+    "preview": {
+      "family": ["Ubuntu Sans Mono", "Ubuntu Mono", "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "8px",
+    "gap": "4px"
+  }
+}

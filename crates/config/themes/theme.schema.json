@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tristanseltec/super-keyboard/blob/main/crates/config/themes/theme.schema.json",
+  "title": "Super Keyboard theme",
+  "description": "Colours, fonts and sizes for Super Keyboard. Put the file in the themes/ folder of the config directory; its file name without .json is the theme's name. See docs/CUSTOMIZING.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "appearance"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 60, "description": "What the theme list shows." },
+    "description": { "type": "string", "maxLength": 200 },
+    "appearance": {
+      "enum": ["light", "dark"],
+      "description": "Light or dark: decides which [style.light] or [style.dark] overrides apply, and where the theme is offered when the theme setting is \"system\". Colours the theme leaves out come from the built-in theme of the same appearance."
+    },
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bg": { "$ref": "#/$defs/color", "description": "App background." },
+        "panel": { "$ref": "#/$defs/color", "description": "Top bar and keyboard background." },
+        "key": { "$ref": "#/$defs/color", "description": "Key background." },
+        "key-special": { "$ref": "#/$defs/color", "description": "Background of Esc, modifier, layer and other named keys." },
+        "key-pressed": { "$ref": "#/$defs/color", "description": "Key background while pressed." },
+        "key-border": { "$ref": "#/$defs/color", "description": "Key outline; transparent for none." },
+        "text": { "$ref": "#/$defs/color", "description": "Main text." },
+        "key-text": { "$ref": "#/$defs/color", "description": "Key labels. Defaults to text." },
+        "key-special-text": { "$ref": "#/$defs/color", "description": "Labels of named keys. Defaults to muted." },
+        "muted": { "$ref": "#/$defs/color", "description": "Secondary text and hold hints." },
+        "accent": { "$ref": "#/$defs/color", "description": "Caret, one-shot modifiers and the active layer." },
+        "on-accent": { "$ref": "#/$defs/color", "description": "Label of a locked modifier, drawn on the accent colour." },
+        "selection": { "$ref": "#/$defs/color", "description": "Selected text in the preview." },
+        "warning": { "$ref": "#/$defs/color", "description": "Notices about layout and settings errors." }
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ui": { "$ref": "#/$defs/font", "description": "Top bar, settings and notices." },
+        "keys": { "$ref": "#/$defs/font", "description": "Key labels." },
+        "preview": { "$ref": "#/$defs/font", "description": "The typed text in the preview." }
+      }
+    },
+    "sizes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "radius": { "$ref": "#/$defs/length", "description": "Key corner radius." },
+        "gap": { "$ref": "#/$defs/length", "description": "Space between keys." }
+      }
+    }
+  },
+  "$defs": {
+    "color": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "A CSS colour: #rgb, #rrggbb, #rrggbbaa, rgb(...), hsl(...), oklch(...), color-mix(...) or a colour name.",
+      "pattern": "^[A-Za-z0-9#%.,()/ +-]+$"
+    },
+    "length": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "A CSS length: 6px, 0.5rem, calc(...), clamp(...).",
+      "pattern": "^[A-Za-z0-9#%.,()/ +-]+$"
+    },
+    "fontName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "An installed font, or a generic family such as monospace, sans-serif, serif or system-ui. Fonts are never downloaded.",
+      "pattern": "^[\\p{L}\\p{N} ._+&-]+$"
+    },
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "description": "Fonts to try, in order; end with a generic family.",
+          "oneOf": [
+            { "type": "array", "items": { "$ref": "#/$defs/fontName" }, "minItems": 1, "maxItems": 12 },
+            { "type": "string", "description": "Font names separated by commas." }
+          ]
+        },
+        "size": { "$ref": "#/$defs/length" },
+        "weight": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1, "maximum": 1000 },
+            { "enum": ["normal", "bold", "lighter", "bolder"] }
+          ]
+        }
+      }
+    }
+  }
+}

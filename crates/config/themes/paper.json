@@ -1,0 +1,42 @@
+{
+  "title": "Paper",
+  "description": "Warm sepia paper, ink-dark labels and a serif interface, for long sessions.",
+  "appearance": "light",
+  "colors": {
+    "bg": "#f4ecd8",
+    "panel": "#e9dfc6",
+    "key": "#fbf7ec",
+    "key-special": "#e1d5b7",
+    "key-pressed": "#d3c4a0",
+    "key-border": "transparent",
+    "text": "#2b2116",
+    "key-text": "#2b2116",
+    "key-special-text": "#5c4a33",
+    "muted": "#5c4a33",
+    "accent": "#8b2e16",
+    "on-accent": "#fbf7ec",
+    "selection": "#8b2e1629",
+    "warning": "#7a4a00"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Literata", "Source Serif 4", "Georgia", "DejaVu Serif", "serif"],
+      "size": "14px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["IBM Plex Mono", "iA Writer Mono S", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["IBM Plex Mono", "iA Writer Mono S", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "3px",
+    "gap": "4px"
+  }
+}

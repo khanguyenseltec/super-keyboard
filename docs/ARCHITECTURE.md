@@ -8,7 +8,7 @@ reaches the focused application.
 
 ```text
 ┌──────────────── crates/config (super-keyboard-config) ────────────────┐
-│  settings.toml · layouts/*.toml  ──▶  UserConfig (problems, reload)   │
+│  settings.toml · layouts/*.toml · themes/*.json  ──▶  UserConfig      │
 └──────────────┬────────────────────────────────────────────────────────┘
                │ chosen layout, gesture timing, theme and style
 ┌──────────────▼──────────────── apps/super-keyboard (Dioxus 0.7) ─────────────────────────┐
@@ -33,7 +33,8 @@ PreviewSink  Android sink          Linux uinput sink          Linux portal sink 
 |---|---|
 | `crates/core` | `super-keyboard-core`: layouts, actions, gestures, the `Keyboard` state machine, `Output` and `OutputSink`. No UI, platform or file system dependencies, so it builds and tests anywhere (CI also checks it for Android targets). |
 | `crates/core/layouts/` | Built-in layouts. `dev.toml` is the default. |
-| `crates/config` | `super-keyboard-config`: the config directory, `settings.toml` (parse, validate, save with comments kept), style overrides, the layout library, and reload with last-good fallback. No UI dependency. |
+| `crates/config` | `super-keyboard-config`: the config directory, `settings.toml` (parse, validate, save with comments kept), themes and style overrides, the layout and theme libraries, and reload with last-good fallback. No UI dependency. |
+| `crates/config/themes/` | Built-in themes as JSON, and `theme.schema.json` for editors. |
 | `apps/super-keyboard` | The Dioxus app. Cargo features `desktop` (default), `mobile` (Android) and `web` (browser preview for layout work). |
 | `docs/` | This document, the [roadmap](ROADMAP.md) and the [customizing guide](CUSTOMIZING.md). |
 | *planned* `crates/sink-linux` | uinput, portal and XTest output for Ubuntu. |
@@ -79,14 +80,24 @@ deterministic in tests and identical on every platform. `Keyboard::trigger` turn
 trigger into output; one-shot modifiers apply to every step of a swipe, which is how Shift
 plus a space-bar drag selects.
 
-**Configuration is files.** `super-keyboard-config` reads `settings.toml` and
-`layouts/*.toml` from the config directory and never fails: broken files become
+**Configuration is files.** `super-keyboard-config` reads `settings.toml`,
+`layouts/*.toml` and `themes/*.json` from the config directory and never fails: broken files become
 `Problem`s the app shows, and on reload a broken file keeps its last good version.
 Settings changed in the app are written back with `toml_edit`, changing values in place so
 the user's comments survive. The app polls a cheap fingerprint of the directory once a
 second on desktop rather than using file notifications, which miss editors that save by
 renaming and cost more than they save for a handful of small files. See
 [CUSTOMIZING.md](CUSTOMIZING.md).
+
+**Themes are variables.** A theme (JSON) sets the same style variables as `[style]`
+in `settings.toml`: colours, font families, sizes and weights, key radius and gap.
+What a theme leaves out comes from the built-in theme of its appearance, so every
+resolved theme sets every variable. The app writes the active theme, merged with the
+user's `[style]` changes, as CSS variables on `.app` (both a light and a dark theme,
+behind `prefers-color-scheme`, when following the system), and `main.css` only reads
+variables. The keyboard's size is a share of the window set the same way: attributes
+on `.app` switch the keyboard to a flex share of the window, and labels size
+themselves with container query units.
 
 **Sinks are the platform boundary.** `OutputSink::emit(Output)` is the only interface a
 platform backend implements. `PreviewSink` (an in-app text buffer and event log) is the
@@ -159,10 +170,12 @@ A keyboard sees passwords, tokens and private messages. These rules are not opti
   `IME_FLAG_NO_PERSONALIZED_LEARNING`).
 - **Layouts are data.** Layout files can insert text and press keys; they can never run
   code. Imported layouts are shown before they are used.
-- **Styles are data too.** Style overrides in `settings.toml` are CSS values, but only
-  colours, lengths and maths functions: anything that could load a resource (`url()`,
-  `image-set()`, `@import`) or break out of a declaration (quotes, `;`, braces,
-  backslashes) is rejected, so a theme can never exfiltrate what the keyboard shows.
+- **Styles and themes are data too.** Theme files and style overrides in
+  `settings.toml` are CSS values, but only colours, lengths, maths functions, font
+  weights and the names of installed fonts: anything that could load a resource
+  (`url()`, `image-set()`, `@import`, `@font-face`) or break out of a declaration
+  (quotes, `;`, braces, backslashes) is rejected, and font names are quoted by the app,
+  so a theme can never exfiltrate what the keyboard shows. Fonts are never downloaded.
 - **Desktop injection is powerful.** A uinput device can type into any window, including
   `sudo` prompts. The desktop output service accepts input only from the local UI, and
   later from devices the user has explicitly paired.

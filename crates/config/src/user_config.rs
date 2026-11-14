@@ -1,13 +1,15 @@
 //! Loading, reloading and saving the whole configuration directory.
 
-use std::{fmt, io};
+use std::{fmt, io, path::PathBuf};
 
 use super_keyboard_core::{Keymap, Layout};
 
 use crate::{
     ConfigDir, LayoutEntry, LayoutId, LayoutLibrary, LayoutOrigin, Settings, SettingsError,
-    profile::{DEFAULT_PROFILE, Profile, ProfileCatalog, presets},
+    ThemeChoice,
+    profile::{DEFAULT_PROFILE, Profile, ProfileCatalog, is_valid_name, presets},
     settings::SettingsDocument,
+    theme::{self, Appearance, Theme, ThemeEntry, ThemeLibrary, ThemeOrigin},
 };
 
 const SETTINGS_FILE: &str = "settings.toml";
@@ -37,14 +39,42 @@ pub enum SaveError {
     BrokenFile(#[from] SettingsError),
     #[error("could not write settings.toml: {0}")]
     Io(#[from] io::Error),
+    #[error("`{0}` is not a built-in theme")]
+    NotBuiltinTheme(String),
+    #[error("could not create {path}: {source}")]
+    ThemeFile { path: String, source: io::Error },
 }
 
-/// Settings, layouts and profiles, as loaded from a [`ConfigDir`].
+/// The theme or themes on screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActiveTheme<'a> {
+    /// The same theme whatever the system's appearance.
+    Fixed(&'a ThemeEntry),
+    /// The light theme while the system is light, the dark one while it is dark.
+    System {
+        light: &'a ThemeEntry,
+        dark: &'a ThemeEntry,
+    },
+}
+
+impl ActiveTheme<'_> {
+    /// Whether `id` is on screen, or would be when the system changes
+    /// appearance.
+    pub fn uses(&self, id: &str) -> bool {
+        match self {
+            Self::Fixed(entry) => entry.id == id,
+            Self::System { light, dark } => light.id == id || dark.id == id,
+        }
+    }
+}
+
+/// Settings, layouts, themes and profiles, as loaded from a [`ConfigDir`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserConfig {
     pub dir: Option<ConfigDir>,
     pub settings: Settings,
     pub library: LayoutLibrary,
+    pub themes: ThemeLibrary,
     /// Presets, the user's profiles and one per otherwise unused layout. Rebuilt
     /// whenever settings or layouts change.
     pub profiles: ProfileCatalog,
@@ -52,7 +82,8 @@ pub struct UserConfig {
 }
 
 impl Default for UserConfig {
-    /// Built-in layouts, presets and default settings, without a config directory.
+    /// Built-in layouts, themes, presets and default settings, without a config
+    /// directory.
     fn default() -> Self {
         let library = LayoutLibrary::builtin();
         Self {
@@ -60,14 +91,16 @@ impl Default for UserConfig {
             settings: Settings::default(),
             profiles: ProfileCatalog::new(presets(), &[], &library),
             library,
+            themes: ThemeLibrary::builtin(),
             problems: Vec::new(),
         }
     }
 }
 
 impl UserConfig {
-    /// Loads `settings.toml` and `layouts/*.toml` from `dir`. Missing files are
-    /// fine; broken ones are skipped and reported in [`UserConfig::problems`].
+    /// Loads `settings.toml`, `layouts/*.toml` and `themes/*.json` from `dir`.
+    /// Missing files are fine; broken ones are skipped and reported in
+    /// [`UserConfig::problems`].
     pub fn load(dir: Option<ConfigDir>) -> Self {
         Self::load_over(dir, None)
     }
@@ -111,6 +144,42 @@ impl UserConfig {
         self.profiles.menu(&self.settings.menu)
     }
 
+    /// The theme the settings ask for. A missing theme falls back to following
+    /// the system, and a missing light or dark theme to the built-in one.
+    pub fn active_theme(&self) -> ActiveTheme<'_> {
+        let theme = &self.settings.theme;
+        if let ThemeChoice::Named(name) = &theme.choice
+            && let Some(entry) = self.themes.get(name)
+        {
+            return ActiveTheme::Fixed(entry);
+        }
+        ActiveTheme::System {
+            light: self.themes.get_or_default(&theme.light, Appearance::Light),
+            dark: self.themes.get_or_default(&theme.dark, Appearance::Dark),
+        }
+    }
+
+    /// Copies the built-in theme `id` to `themes/<id>.json`, where it replaces
+    /// the built-in one and can be edited. Returns the new file.
+    pub fn create_theme_file(&mut self, id: &str) -> Result<PathBuf, SaveError> {
+        let dir = self.dir.as_ref().ok_or(SaveError::NoConfigDir)?;
+        let source =
+            theme::builtin_source(id).ok_or_else(|| SaveError::NotBuiltinTheme(id.to_owned()))?;
+        let path = dir
+            .create_theme_file(id, source)
+            .map_err(|source| SaveError::ThemeFile {
+                path: dir.display_path(&dir.themes_dir().join(format!("{id}.json"))),
+                source,
+            })?;
+        if let Some(entry) = self.themes.get(id).cloned() {
+            self.themes.insert(ThemeEntry {
+                origin: ThemeOrigin::File(path.clone()),
+                ..entry
+            });
+        }
+        Ok(path)
+    }
+
     /// Applies `settings` and saves them to `settings.toml`, keeping the file's
     /// comments. The settings apply even if saving fails.
     pub fn update_settings(&mut self, settings: Settings) -> Result<(), SaveError> {
@@ -133,6 +202,7 @@ impl UserConfig {
         if let Some(dir) = dir {
             config.load_settings(&dir, previous);
             config.load_layouts(&dir, previous);
+            config.load_themes(&dir, previous);
             config.refresh_profiles();
         }
         config
@@ -186,6 +256,49 @@ impl UserConfig {
         }
     }
 
+    fn load_themes(&mut self, dir: &ConfigDir, previous: Option<&Self>) {
+        let files = match dir.theme_files() {
+            Ok(files) => files,
+            Err(err) => return self.problem("themes", err.to_string()),
+        };
+        for path in files {
+            let shown = dir.display_path(&path);
+            let Some(id) = path.file_stem().and_then(|stem| stem.to_str()) else {
+                self.problem(&shown, "the file name is not valid UTF-8".into());
+                continue;
+            };
+            if !is_valid_name(id) || id == ThemeChoice::SYSTEM {
+                let message = if id == ThemeChoice::SYSTEM {
+                    "`system` is not a theme name: `theme = \"system\"` follows the system".into()
+                } else {
+                    "theme file names may only use letters, digits, `-` and `_`".into()
+                };
+                self.problem(&shown, message);
+                continue;
+            }
+            let origin = ThemeOrigin::File(path.clone());
+            let loaded = ConfigDir::read_file(&path)
+                .map_err(|err| err.to_string())
+                .and_then(|source| Theme::from_json(&source).map_err(|err| err.to_string()));
+            match loaded {
+                Ok(theme) => self.themes.insert(ThemeEntry {
+                    id: id.to_owned(),
+                    theme,
+                    origin,
+                }),
+                Err(message) => {
+                    let last_good = previous
+                        .and_then(|p| p.themes.get(id))
+                        .filter(|entry| entry.origin == origin);
+                    if let Some(entry) = last_good {
+                        self.themes.insert(entry.clone());
+                    }
+                    self.problem(&shown, message);
+                }
+            }
+        }
+    }
+
     /// Rebuilds the profile catalog and reports profiles that cannot be shown as
     /// written. Presets are not checked: they may name sections that a user's
     /// replacement `dev.toml` does not have, and that is not a mistake.
@@ -198,6 +311,26 @@ impl UserConfig {
             problems.push(format!(
                 "profile `{name}` not found; using `{DEFAULT_PROFILE}`"
             ));
+        }
+        let theme = &self.settings.theme;
+        if let ThemeChoice::Named(name) = &theme.choice
+            && self.themes.get(name).is_none()
+        {
+            problems.push(format!(
+                "theme `{name}` not found; following the system instead"
+            ));
+        }
+        for (field, appearance) in [
+            ("light-theme", Appearance::Light),
+            ("dark-theme", Appearance::Dark),
+        ] {
+            let name = theme.for_appearance(appearance);
+            if self.themes.get(name).is_none() {
+                problems.push(format!(
+                    "{field} `{name}` not found; using `{}`",
+                    appearance.default_theme()
+                ));
+            }
         }
         for profile in self.profiles.all().iter().filter(|p| p.is_saved()) {
             let (name, layout) = (profile.name(), &profile.spec.layout);
@@ -235,9 +368,10 @@ mod tests {
     use std::fs;
 
     use super::*;
-    use crate::ThemeMode;
 
     const MINE: &str = "name = \"mine\"\n[[layers]]\nname = \"base\"\nrows = [[\"x\"]]\n";
+    const MIDNIGHT: &str =
+        r##"{ "title": "Midnight", "appearance": "dark", "colors": { "accent": "#ffb454" } }"##;
 
     struct Fixture {
         _tmp: tempfile::TempDir,
@@ -254,6 +388,11 @@ mod tests {
 
         fn layout(&self, name: &str, source: &str) {
             fs::write(self.dir.layouts_dir().join(name), source).unwrap();
+        }
+
+        fn theme(&self, name: &str, source: &str) {
+            fs::create_dir_all(self.dir.themes_dir()).unwrap();
+            fs::write(self.dir.themes_dir().join(name), source).unwrap();
         }
 
         fn settings(&self, source: &str) {
@@ -289,7 +428,10 @@ mod tests {
         let config = fx.load();
         assert_eq!(config.problems, []);
         assert_eq!(ids(&config), ["dev", "mine"]);
-        assert_eq!(config.settings.theme, ThemeMode::Dark);
+        assert_eq!(
+            config.settings.theme.choice,
+            ThemeChoice::Named("dark".into())
+        );
         assert_eq!(config.active_layout().layout.name, "mine");
     }
 
@@ -316,7 +458,7 @@ mod tests {
         );
         assert_eq!(config.active_layout().id.as_str(), "dev");
 
-        fx.settings("theme = \"blue\"");
+        fx.settings("theme = \"a b\"");
         let config = fx.load();
         assert_eq!(config.settings, Settings::default());
         assert!(config.problems.iter().any(|p| p.file == "settings.toml"));
@@ -333,7 +475,10 @@ mod tests {
         fx.settings("theme = ");
         let reloaded = config.reload();
         assert_eq!(reloaded.library, config.library);
-        assert_eq!(reloaded.settings.theme, ThemeMode::Dark);
+        assert_eq!(
+            reloaded.settings.theme.choice,
+            ThemeChoice::Named("dark".into())
+        );
         assert_eq!(reloaded.problems.len(), 2);
 
         // Deleting a file is not breaking it: the layout goes away.
@@ -377,7 +522,7 @@ mod tests {
         let dir = ConfigDir::new(tmp.path().join("new"));
         let mut config = UserConfig::load(Some(dir.clone()));
         let mut settings = config.settings.clone();
-        settings.theme = ThemeMode::Light;
+        settings.theme.choice = ThemeChoice::Named("light".into());
         config.update_settings(settings).unwrap();
         let saved = fs::read_to_string(dir.settings_file()).unwrap();
         assert!(saved.contains("theme = \"light\""), "{saved}");
@@ -402,6 +547,115 @@ mod tests {
             fs::read_to_string(fx.dir.settings_file()).unwrap(),
             "theme = "
         );
+    }
+
+    fn theme_ids(config: &UserConfig) -> Vec<&str> {
+        config
+            .themes
+            .entries()
+            .iter()
+            .filter(|e| !e.is_builtin())
+            .map(|e| e.id.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn loads_user_themes_and_chooses_the_active_theme() {
+        let fx = Fixture::new();
+        fx.theme("midnight.json", MIDNIGHT);
+        fx.theme("nord.json", &MIDNIGHT.replace("Midnight", "My Nord"));
+        fx.settings("theme = \"midnight\"\n");
+        let config = fx.load();
+        assert_eq!(config.problems, []);
+        assert_eq!(theme_ids(&config), ["nord", "midnight"]);
+        assert_eq!(config.themes.get("nord").unwrap().theme.title, "My Nord");
+        let ActiveTheme::Fixed(active) = config.active_theme() else {
+            panic!("a fixed theme");
+        };
+        assert_eq!(active.theme.title, "Midnight");
+        assert!(config.active_theme().uses("midnight"));
+
+        fx.settings("light-theme = \"paper\"\ndark-theme = \"midnight\"\n");
+        let config = fx.load();
+        let ActiveTheme::System { light, dark } = config.active_theme() else {
+            panic!("follows the system");
+        };
+        assert_eq!((light.id.as_str(), dark.id.as_str()), ("paper", "midnight"));
+    }
+
+    #[test]
+    fn missing_and_broken_themes_become_problems() {
+        let fx = Fixture::new();
+        fx.theme("broken.json", r#"{ "title": "B", "appearance": "dim" }"#);
+        fx.theme("Has Space.json", MIDNIGHT);
+        fx.theme("system.json", MIDNIGHT);
+        fx.settings("theme = \"gone\"\nlight-theme = \"nord\"\ndark-theme = \"lost\"\n");
+        let config = fx.load();
+        let problems: Vec<String> = config.problems.iter().map(ToString::to_string).collect();
+        let sep = std::path::MAIN_SEPARATOR;
+        assert_eq!(
+            problems,
+            [
+                format!(
+                    "themes{sep}Has Space.json: theme file names may only use letters, digits, `-` and `_`"
+                ),
+                format!(
+                    "themes{sep}broken.json: `appearance` must be \"light\" or \"dark\", not \"dim\""
+                ),
+                format!(
+                    "themes{sep}system.json: `system` is not a theme name: `theme = \"system\"` follows the system"
+                ),
+                "settings.toml: theme `gone` not found; following the system instead".to_owned(),
+                "settings.toml: dark-theme `lost` not found; using `dark`".to_owned(),
+            ]
+        );
+        assert!(theme_ids(&config).is_empty());
+        // A light theme may be a dark one: it is the user's choice.
+        let ActiveTheme::System { light, dark } = config.active_theme() else {
+            panic!("falls back to following the system");
+        };
+        assert_eq!((light.id.as_str(), dark.id.as_str()), ("nord", "dark"));
+    }
+
+    #[test]
+    fn reload_keeps_the_last_good_version_of_a_broken_theme() {
+        let fx = Fixture::new();
+        fx.theme("midnight.json", MIDNIGHT);
+        let config = fx.load();
+        fx.theme("midnight.json", "{ \"title\": ");
+        let reloaded = config.reload();
+        assert_eq!(reloaded.themes, config.themes);
+        assert_eq!(reloaded.problems.len(), 1);
+
+        fs::remove_file(fx.dir.themes_dir().join("midnight.json")).unwrap();
+        assert!(theme_ids(&config.reload()).is_empty());
+    }
+
+    #[test]
+    fn copies_a_builtin_theme_to_edit_it() {
+        let fx = Fixture::new();
+        let mut config = fx.load();
+        let path = config.create_theme_file("nord").unwrap();
+        assert_eq!(path, fx.dir.themes_dir().join("nord.json"));
+        assert_eq!(
+            config.themes.get("nord").unwrap().origin,
+            ThemeOrigin::File(path.clone())
+        );
+        assert_eq!(fx.load().themes, config.themes);
+
+        let err = config.create_theme_file("nord").unwrap_err();
+        assert!(
+            err.to_string().starts_with("could not create themes"),
+            "{err}"
+        );
+        assert!(matches!(
+            config.create_theme_file("mine"),
+            Err(SaveError::NotBuiltinTheme(_))
+        ));
+        assert!(matches!(
+            UserConfig::default().create_theme_file("nord"),
+            Err(SaveError::NoConfigDir)
+        ));
     }
 
     /// The labels of the first row of the keymap's base layer.

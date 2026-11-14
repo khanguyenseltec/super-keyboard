@@ -1,0 +1,42 @@
+{
+  "title": "Green Phosphor",
+  "description": "Green-on-black terminal glow with square, outlined keys.",
+  "appearance": "dark",
+  "colors": {
+    "bg": "#020a04",
+    "panel": "#010603",
+    "key": "#07180b",
+    "key-special": "#041107",
+    "key-pressed": "#0f3019",
+    "key-border": "#0f3a1b",
+    "text": "#4dff7a",
+    "key-text": "#4dff7a",
+    "key-special-text": "#2fd15a",
+    "muted": "#2fd15a",
+    "accent": "#b3ffc6",
+    "on-accent": "#020a04",
+    "selection": "#33ff6640",
+    "warning": "#ffd166"
+  },
+  "fonts": {
+    "ui": {
+      "family": ["Share Tech Mono", "VT323", "Terminus", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "13px",
+      "weight": 400
+    },
+    "keys": {
+      "family": ["Share Tech Mono", "VT323", "Terminus", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "clamp(13px, 0.75rem + 0.6vw, 18px)",
+      "weight": 400
+    },
+    "preview": {
+      "family": ["Share Tech Mono", "VT323", "Terminus", "JetBrains Mono", "Fira Code", "Ubuntu Mono", "DejaVu Sans Mono", "ui-monospace", "monospace"],
+      "size": "15px",
+      "weight": 400
+    }
+  },
+  "sizes": {
+    "radius": "0px",
+    "gap": "5px"
+  }
+}
