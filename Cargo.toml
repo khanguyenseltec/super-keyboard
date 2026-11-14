@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/core", "apps/super-keyboard"]
-default-members = ["crates/core"]
+members = ["crates/core", "crates/config", "apps/super-keyboard"]
+default-members = ["crates/core", "crates/config"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,6 +13,7 @@ authors = ["Super Keyboard contributors"]
 
 [workspace.dependencies]
 super-keyboard-core = { path = "crates/core" }
+super-keyboard-config = { path = "crates/config" }
 dioxus = { version = "0.7.10" }
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"

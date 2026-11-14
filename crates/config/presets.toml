@@ -1,0 +1,29 @@
+# Built-in profiles ("presets").
+#
+# A profile picks a layout and arranges its sections: `sections` switches them on
+# or off, `order` reorders them. A profile in settings.toml with the same name
+# replaces a preset; the app's "reset to preset" removes that replacement.
+# The menu lists presets in this order unless settings.toml reorders it.
+
+[[profiles]]
+name = "coding"
+title = "Coding"
+layout = "dev"
+
+[[profiles]]
+name = "coding-numbers"
+title = "Coding with a number row"
+layout = "dev"
+sections = { number-row = true }
+
+[[profiles]]
+name = "terminal"
+title = "Terminal"
+layout = "dev"
+sections = { terminal = true, brackets = false }
+
+[[profiles]]
+name = "compact"
+title = "Compact"
+layout = "dev"
+sections = { brackets = false, operators = false, function-keys = false }

@@ -11,7 +11,17 @@ publish = false
 
 [dependencies]
 super-keyboard-core.workspace = true
+super-keyboard-config.workspace = true
 dioxus.workspace = true
+# A monotonic clock that also works in the browser preview.
+web-time = "1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Timers for long-press and key repeat; Dioxus desktop and mobile run on Tokio.
+tokio = { version = "1", features = ["time"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { version = "0.3", features = ["futures"] }
 
 [features]
 default = ["desktop"]
@@ -26,3 +36,4 @@ workspace = true
 
 [dev-dependencies]
 dioxus-ssr = "0.7.10"
+tempfile = "3"

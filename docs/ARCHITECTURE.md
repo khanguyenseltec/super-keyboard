@@ -7,12 +7,17 @@ reaches the focused application.
 ## Overview
 
 ```text
-┌──────────────────────────── apps/super-keyboard (Dioxus 0.7) ─────────────────────────────┐
-│  KeyboardView · Preview · (later) Settings · Layout editor                                │
+┌──────────────── crates/config (super-keyboard-config) ────────────────┐
+│  settings.toml · layouts/*.toml  ──▶  UserConfig (problems, reload)   │
+└──────────────┬────────────────────────────────────────────────────────┘
+               │ chosen layout, gesture timing, theme and style
+┌──────────────▼──────────────── apps/super-keyboard (Dioxus 0.7) ─────────────────────────┐
+│  TopBar · Notices · Preview · SettingsPanel · KeyboardView      (later) Layout editor     │
 └──────────────┬──────────────────────────────────────────────────────────▲─────────────────┘
-               │ tap(row, col)                                             │ layer, modifier latches
+               │ press / move / release (pointer, key, x, time)            │ layer, latches, pressed keys
 ┌──────────────▼──────────────────── crates/core (super-keyboard-core) ────┴─────────────────┐
-│  Layout (TOML)  ──▶  Keyboard state machine  ──▶  Output = Text("->") | Key(Ctrl+Shift+T)   │
+│  Gestures (tap, hold, repeat, swipe) ──▶ Trigger ──▶ Keyboard (layers, modifier latches)   │
+│  Layout (TOML)                                       ──▶ Output = Text("->") | Key(Ctrl+T) │
 └──────────────┬────────────────────────────────────────────────────────────────────────────┘
                │ OutputSink::emit(output)
    ┌───────────┼──────────────────────┬──────────────────────────┬─────────────────────────┐
@@ -26,17 +31,19 @@ PreviewSink  Android sink          Linux uinput sink          Linux portal sink 
 
 | Path | What it is |
 |---|---|
-| `crates/core` | `super-keyboard-core`: layouts, actions, the `Keyboard` state machine, `Output` and `OutputSink`. No UI and no platform dependencies, so it builds and tests anywhere (CI also checks it for Android targets). |
+| `crates/core` | `super-keyboard-core`: layouts, actions, gestures, the `Keyboard` state machine, `Output` and `OutputSink`. No UI, platform or file system dependencies, so it builds and tests anywhere (CI also checks it for Android targets). |
 | `crates/core/layouts/` | Built-in layouts. `dev.toml` is the default. |
+| `crates/config` | `super-keyboard-config`: the config directory, `settings.toml` (parse, validate, save with comments kept), style overrides, the layout library, and reload with last-good fallback. No UI dependency. |
 | `apps/super-keyboard` | The Dioxus app. Cargo features `desktop` (default), `mobile` (Android) and `web` (browser preview for layout work). |
-| `docs/` | This document and the [roadmap](ROADMAP.md). |
+| `docs/` | This document, the [roadmap](ROADMAP.md) and the [customizing guide](CUSTOMIZING.md). |
 | *planned* `crates/sink-linux` | uinput, portal and XTest output for Ubuntu. |
 | *planned* `android/` | Kotlin `InputMethodService` host for the system keyboard (see below). |
 
 ## Core concepts
 
-**Layouts are code.** A layout is a TOML file: a list of layers, each a list of rows of
-keys. Keys use a short notation borrowed from Vim: `"a"` and `"->"` insert text,
+**Layouts are code, built from sections.** A layout is a TOML file of named sections
+(blocks of rows: number row, brackets, letters, the space-bar row) and layers that list
+the sections they show; simple layouts can give a layer its rows directly. Keys use a short notation borrowed from Vim: `"a"` and `"->"` insert text,
 `"<esc>"` presses a named key, `"<ctrl>"` arms a modifier, `"<layer:sym>"` switches
 layer. The table form `{ tap = "<space>", width = 3.0 }` sets widths and labels, and
 `{ text = "<div>" }` inserts text that would otherwise parse as a key name. Layout errors
@@ -51,6 +58,35 @@ what makes `Ctrl` then `c` send `Ctrl+C` on a touch screen without holding two k
 `Text(String)` and `Key { key, mods }`. A single character with Ctrl, Alt or Super becomes
 a chord (`Ctrl+C`); with Shift alone it becomes uppercase text; multi-character text such
 as `=>` is inserted as written. Every platform sink only has to handle these two cases.
+
+**Profiles arrange sections; the keyboard runs a keymap.** An `Arrangement` switches
+sections on or off and reorders them, storing only overrides, so a layout can gain
+sections without breaking saved profiles. `Layout::keymap(&arrangement)` produces the
+`Keymap` (layers of concrete rows) that `Keyboard` runs; rearranging builds a new keymap
+and the app swaps it in, cancelling presses in progress. One order applies to every
+layer, which is why a layer must list its sections in declaration order. Required
+sections cannot be switched off, so a profile can never hide the way back to a layer.
+Profiles live in `super-keyboard-config`: presets ship as data (`presets.toml`), the
+user's profiles and the profile menu's order and visibility (another `Arrangement`) live
+in `settings.toml`, and every otherwise unused layout gets a profile automatically.
+
+**Gestures are a clock-free state machine.** `Gestures` turns pointer events into
+`Trigger`s: a plain key taps on press; Backspace and the arrows repeat after a delay; a key
+with a `hold` action or a `swipe` waits for release, the hold delay or sideways movement.
+A new press settles any waiting tap first, so overlapping fingers keep their order. Hosts
+pass the time with every event and call `tick` at `next_deadline()`, so the rules are
+deterministic in tests and identical on every platform. `Keyboard::trigger` turns each
+trigger into output; one-shot modifiers apply to every step of a swipe, which is how Shift
+plus a space-bar drag selects.
+
+**Configuration is files.** `super-keyboard-config` reads `settings.toml` and
+`layouts/*.toml` from the config directory and never fails: broken files become
+`Problem`s the app shows, and on reload a broken file keeps its last good version.
+Settings changed in the app are written back with `toml_edit`, changing values in place so
+the user's comments survive. The app polls a cheap fingerprint of the directory once a
+second on desktop rather than using file notifications, which miss editors that save by
+renaming and cost more than they save for a handful of small files. See
+[CUSTOMIZING.md](CUSTOMIZING.md).
 
 **Sinks are the platform boundary.** `OutputSink::emit(Output)` is the only interface a
 platform backend implements. `PreviewSink` (an in-app text buffer and event log) is the
@@ -123,6 +159,10 @@ A keyboard sees passwords, tokens and private messages. These rules are not opti
   `IME_FLAG_NO_PERSONALIZED_LEARNING`).
 - **Layouts are data.** Layout files can insert text and press keys; they can never run
   code. Imported layouts are shown before they are used.
+- **Styles are data too.** Style overrides in `settings.toml` are CSS values, but only
+  colours, lengths and maths functions: anything that could load a resource (`url()`,
+  `image-set()`, `@import`) or break out of a declaration (quotes, `;`, braces,
+  backslashes) is rejected, so a theme can never exfiltrate what the keyboard shows.
 - **Desktop injection is powerful.** A uinput device can type into any window, including
   `sudo` prompts. The desktop output service accepts input only from the local UI, and
   later from devices the user has explicitly paired.
@@ -145,3 +185,9 @@ before the IME is built on it.
 | 4 | MIT OR Apache-2.0 | The Rust ecosystem default, same as Dioxus. |
 | 5 | Android IME host | *Open, Phase 2 spike.* |
 | 6 | Ubuntu focus and injection strategy | *Open, Phase 3 spike.* |
+| 7 | Gesture timing in the core, with the clock passed in | Same long-press and repeat feel on every front end, including a native Android host; fully testable without timers. |
+| 8 | Configuration in its own crate, polled for changes | Front ends share one meaning of every setting; polling a fingerprint is simpler and more robust than file notifications for a few small files. |
+| 9 | `settings.toml` saved with `toml_edit` | Users edit the same file by hand; saving from the app must keep their comments and formatting. |
+| 10 | Sections with one order for every layer | One list to arrange instead of one per layer; shared rows such as the space-bar row stay in the same place on every layer. |
+| 11 | Arrangements store overrides; listed items trade places | Saved profiles survive layouts gaining sections; a partial order changes only what it names. |
+| 12 | Presets as data, changed presets as user copies | Presets can be improved in new releases while "reset to preset" stays one step; no code needed to add one. |

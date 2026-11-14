@@ -34,7 +34,7 @@ jobs:
       - run: cargo test --workspace
 
   android-core:
-    name: Core builds for Android targets
+    name: Engine and config build for Android targets
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -44,5 +44,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: |
           for target in aarch64-linux-android armv7-linux-androideabi x86_64-linux-android; do
-            cargo check -p super-keyboard-core --target "$target"
+            cargo check -p super-keyboard-core -p super-keyboard-config --target "$target"
           done
+
+  web:
+    name: Browser preview builds (wasm)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p super-keyboard --no-default-features --features web --target wasm32-unknown-unknown

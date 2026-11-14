@@ -1,0 +1,251 @@
+//! The shape of `settings.toml`, and its validation into [`Settings`].
+
+use std::collections::BTreeMap;
+
+use serde::Deserialize;
+
+use super::{KeySettings, Limits, PreviewSettings, Settings, SettingsError, ThemeMode};
+use crate::{
+    profile::{ProfileFile, validate_profiles},
+    style::{Style, StyleValue, StyleVar},
+};
+use super_keyboard_core::Arrangement;
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub(super) struct SettingsFile {
+    profile: Option<String>,
+    theme: Option<String>,
+    #[serde(default)]
+    keys: KeysFile,
+    #[serde(default)]
+    preview: PreviewFile,
+    #[serde(default)]
+    style: StyleFile,
+    #[serde(default)]
+    menu: MenuFile,
+    #[serde(default)]
+    profiles: Vec<ProfileFile>,
+}
+
+/// `[menu]`: the order of the profile menu, and which entries it hides.
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MenuFile {
+    #[serde(default)]
+    order: Vec<String>,
+    #[serde(default)]
+    shown: BTreeMap<String, bool>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+struct KeysFile {
+    hold_delay: Option<i64>,
+    repeat_delay: Option<i64>,
+    repeat_rate: Option<i64>,
+    swipe_step: Option<i64>,
+    /// `"auto"` or a number of pixels.
+    height: Option<toml::Value>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+struct PreviewFile {
+    show_log: Option<bool>,
+}
+
+/// `[style]` holds variables for both themes; `[style.dark]` and
+/// `[style.light]` hold variables for one. (Unknown names land in `both` and are
+/// reported by validation, so `deny_unknown_fields` is not needed here.)
+#[derive(Debug, Default, Deserialize)]
+struct StyleFile {
+    #[serde(default)]
+    dark: BTreeMap<String, String>,
+    #[serde(default)]
+    light: BTreeMap<String, String>,
+    #[serde(flatten)]
+    both: BTreeMap<String, String>,
+}
+
+impl SettingsFile {
+    pub fn validate(self) -> Result<Settings, SettingsError> {
+        let profile = match self.profile {
+            Some(profile) if profile.trim().is_empty() => return Err(SettingsError::EmptyProfile),
+            profile => profile,
+        };
+        let theme = match self.theme {
+            None => ThemeMode::default(),
+            Some(name) => ThemeMode::from_name(&name).ok_or(SettingsError::UnknownTheme(name))?,
+        };
+        Ok(Settings {
+            profile,
+            theme,
+            keys: self.keys.validate()?,
+            preview: PreviewSettings {
+                show_log: self
+                    .preview
+                    .show_log
+                    .unwrap_or(PreviewSettings::default().show_log),
+            },
+            style: self.style.validate()?,
+            menu: Arrangement {
+                order: self.menu.order,
+                enabled: self.menu.shown,
+            },
+            profiles: validate_profiles(self.profiles)?,
+        })
+    }
+}
+
+impl KeysFile {
+    fn validate(self) -> Result<KeySettings, SettingsError> {
+        Ok(KeySettings {
+            hold_delay_ms: number(
+                "keys.hold-delay",
+                self.hold_delay,
+                KeySettings::HOLD_DELAY_MS,
+            )?,
+            repeat_delay_ms: number(
+                "keys.repeat-delay",
+                self.repeat_delay,
+                KeySettings::REPEAT_DELAY_MS,
+            )?,
+            repeat_rate: number(
+                "keys.repeat-rate",
+                self.repeat_rate,
+                KeySettings::REPEAT_RATE,
+            )?,
+            swipe_step_px: number(
+                "keys.swipe-step",
+                self.swipe_step,
+                KeySettings::SWIPE_STEP_PX,
+            )?,
+            height_px: match self.height {
+                None => None,
+                Some(toml::Value::String(word)) if word == "auto" => None,
+                Some(toml::Value::Integer(px)) => {
+                    Some(number("keys.height", Some(px), KeySettings::HEIGHT_PX)?)
+                }
+                Some(_) => return Err(SettingsError::InvalidHeight),
+            },
+        })
+    }
+}
+
+fn number(field: &'static str, value: Option<i64>, limits: Limits) -> Result<u32, SettingsError> {
+    match value {
+        None => Ok(limits.default),
+        Some(value) if limits.contains(value) => {
+            Ok(u32::try_from(value).expect("limits are within u32"))
+        }
+        Some(value) => Err(SettingsError::OutOfRange {
+            field,
+            value,
+            limits,
+        }),
+    }
+}
+
+impl StyleFile {
+    fn validate(self) -> Result<Style, SettingsError> {
+        Ok(Style {
+            both: style_table("style", self.both)?,
+            dark: style_table("style.dark", self.dark)?,
+            light: style_table("style.light", self.light)?,
+        })
+    }
+}
+
+fn style_table(
+    section: &str,
+    table: BTreeMap<String, String>,
+) -> Result<BTreeMap<StyleVar, StyleValue>, SettingsError> {
+    table
+        .into_iter()
+        .map(|(name, value)| {
+            let path = format!("{section}.{name}");
+            let Some(var) = StyleVar::from_name(&name) else {
+                let known = StyleVar::ALL.map(StyleVar::name).join(", ");
+                return Err(SettingsError::UnknownStyleVar { path, known });
+            };
+            let value = StyleValue::parse(var.kind(), &value)
+                .map_err(|reason| SettingsError::InvalidStyleValue { path, reason })?;
+            Ok((var, value))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{KeySettings, Settings, SettingsError};
+
+    fn error(source: &str) -> String {
+        Settings::from_toml(source).unwrap_err().to_string()
+    }
+
+    #[test]
+    fn reports_each_mistake() {
+        assert!(error("thme = \"dark\"").contains("unknown field `thme`"));
+        assert!(error("[keys]\nhold = 3").contains("unknown field `hold`"));
+        assert!(error("[keys]\nhold-delay = \"slow\"").contains("invalid type"));
+        assert_eq!(
+            error("theme = \"blue\""),
+            r#"`theme` must be "system", "light" or "dark", not "blue""#
+        );
+        assert_eq!(error("profile = \" \""), "`profile` must not be empty");
+        assert_eq!(
+            error("[[profiles]]\nname = \"a b\"\nlayout = \"dev\""),
+            "profile name `a b` may only use letters, digits, `-` and `_`"
+        );
+        assert_eq!(
+            error(
+                "[[profiles]]\nname = \"a\"\nlayout = \"dev\"\n[[profiles]]\nname = \"a\"\nlayout = \"dev\""
+            ),
+            "profile `a` is defined more than once"
+        );
+        assert_eq!(
+            error("[[profiles]]\nname = \"a\"\nlayout = \"\""),
+            "profile `a` needs a `layout`"
+        );
+        assert!(error("[[profiles]]\nname = \"a\"").contains("missing field `layout`"));
+        assert!(error("[menu]\nhidden = []").contains("unknown field `hidden`"));
+        assert_eq!(
+            error("[keys]\nrepeat-rate = 0"),
+            "`keys.repeat-rate` must be between 5 and 60, not 0"
+        );
+        assert_eq!(
+            error("[keys]\nheight = 500"),
+            "`keys.height` must be between 32 and 96, not 500"
+        );
+        assert_eq!(
+            error("[keys]\nheight = \"big\""),
+            r#"`keys.height` must be "auto" or a number of pixels"#
+        );
+        assert_eq!(
+            Settings::from_toml("[keys]\nheight = \"auto\"").unwrap(),
+            Settings::default()
+        );
+        assert!(
+            error("[style]\nacent = \"red\"").starts_with("unknown style variable `style.acent`")
+        );
+        assert_eq!(
+            error("[style.dark]\nbg = \"url(x)\""),
+            "`style.dark.bg`: function `url()` is not allowed"
+        );
+        assert!(error("[style.dim]\nbg = \"red\"").contains("invalid type"));
+    }
+
+    #[test]
+    fn range_errors_use_the_documented_limits() {
+        let err = Settings::from_toml("[keys]\nswipe-step = 100").unwrap_err();
+        assert_eq!(
+            err,
+            SettingsError::OutOfRange {
+                field: "keys.swipe-step",
+                value: 100,
+                limits: KeySettings::SWIPE_STEP_PX,
+            }
+        );
+    }
+}

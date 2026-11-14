@@ -21,7 +21,7 @@ testing on real devices and design discussion all count.
 You need stable Rust (1.88 or newer). Everything below runs from the repository root.
 
 ```sh
-cargo test --workspace --no-default-features   # engine + UI render test, no system libraries
+cargo test --workspace --no-default-features   # engine, config and UI tests, no system libraries
 cargo fmt --all
 cargo clippy --workspace --all-targets --no-default-features
 ```
@@ -35,12 +35,16 @@ you can rely on it if you cannot install the webview libraries locally.
 
 | Path | What lives there |
 |---|---|
-| `crates/core/src/action.rs` | Key actions and the `<name>` notation |
-| `crates/core/src/layout.rs` | TOML layout loading and validation |
-| `crates/core/src/engine.rs` | The `Keyboard` state machine (layers, modifier latches) |
-| `crates/core/src/output.rs` | `Output`, `OutputSink` and the in-app `PreviewSink` |
+| `crates/core/src/action/` | Key actions, named keys, modifiers and the `<name>` notation |
+| `crates/core/src/layout/` | Layouts and sections; `arrangement.rs` (on/off and order), `keymap.rs` (what the keyboard runs), `schema.rs`, `resolve.rs` (validation), `error.rs` |
+| `crates/core/src/gesture/` | Tap, hold, repeat and swipe timing, as a clock-free state machine |
+| `crates/core/src/engine/` | The `Keyboard` state machine: layers, modifier latches, chords |
+| `crates/core/src/output/` | `Output`, `OutputSink`, the preview's `TextBuffer` and `PreviewSink` |
+| `crates/core/tests/properties.rs` | Property tests for the engine |
 | `crates/core/layouts/dev.toml` | The built-in developer layout |
-| `apps/super-keyboard/src/main.rs` | The Dioxus UI |
+| `crates/config/src/` | Config directory, `settings/` (model, schema, saving), `profile.rs` (profiles, presets, the menu), `style.rs`, `library.rs`, `user_config.rs` |
+| `crates/config/presets.toml` | The built-in profiles |
+| `apps/super-keyboard/src/` | The Dioxus app: `app.rs`, `state.rs`, `controller.rs`, `components/` (the settings panel's tabs are in `components/settings/`) |
 | `apps/super-keyboard/assets/main.css` | Styles and theme variables |
 
 ## Making a change
@@ -75,8 +79,25 @@ then a body explaining why if it is not obvious.
 ## Adding to the layout notation
 
 To add a named key such as `<printscreen>`: add the variant and its names to `NamedKey` in
-`action.rs` (`from_name`, `label`, `Display`), add a test, and document it at the top of
-`dev.toml`. Sinks that cannot send the key yet should ignore it rather than panic.
+`crates/core/src/action/named_key.rs` (`from_name`, `label`, `Display`), add a test, and
+document it at the top of `dev.toml` and in `docs/CUSTOMIZING.md`. Sinks that cannot send
+the key yet should ignore it rather than panic.
+
+## Adding a setting
+
+Settings live in `crates/config/src/settings/`: add the field to the model in `mod.rs`
+(with `Limits` for numbers), to the file shape and validation in `schema.rs`, to
+`SettingsDocument::apply` and the `TEMPLATE` in `document.rs`, and document it in
+`docs/CUSTOMIZING.md`. Then show it in `apps/super-keyboard/src/components/settings/general.rs`.
+
+## Adding a section or a preset
+
+Sections are data: add a `[[sections]]` entry to `crates/core/layouts/dev.toml` (declared
+where it should appear by default, `enabled = false` if it is optional) and list it in
+the layers that show it. Presets are data too: add a `[[profiles]]` entry to
+`crates/config/presets.toml`. A test checks that presets only name sections the built-in
+layout has. Document both in `docs/CUSTOMIZING.md`.
+Tests in each of those files show the pattern.
 
 ## Reporting bugs and security issues
 
