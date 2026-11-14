@@ -1,0 +1,44 @@
+# Super Keyboard: the built-in developer layout.
+#
+# Key notation (see crates/core/src/action.rs):
+#   "a", "->", "::"          insert that text
+#   "<esc>", "<f5>", "<up>"  press a named key
+#   "<ctrl>", "<shift>"      one-shot modifier (tap twice to lock, three times to release)
+#   "<layer:sym>"            switch to a layer (tap again to go back to the first layer)
+#   { tap = "<space>", width = 3.0 }        set a relative key width
+#   { text = "<div>", label = "div" }       literal text that looks like a key name
+#
+# TOML literal strings ('...') avoid escaping for '\' and '"'.
+
+name = "dev"
+description = "Brackets and Esc/Tab on the base layer; symbols, operators, navigation and F-keys one tap away."
+
+[[layers]]
+name = "base"
+rows = [
+    ["<esc>", "<tab>", "(", ")", "{", "}", "[", "]", ";", ":"],
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l", "_"],
+    [{ tap = "<shift>", width = 1.5 }, "z", "x", "c", "v", "b", "n", "m", { tap = "<bksp>", width = 1.5 }],
+    ["<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0 }, ",", ".", "<layer:nav>", "<enter>"],
+]
+
+[[layers]]
+name = "sym"
+rows = [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["!", "@", "#", "$", "%", "^", "&", "*", "-", "="],
+    ['`', '~', '|', '\', "'", '"', "<", ">", "/", "?"],
+    [{ tap = "<shift>", width = 1.5 }, "->", "=>", "::", "!=", "==", "&&", "||", { tap = "<bksp>", width = 1.5 }],
+    ["<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0 }, ",", ".", "<layer:nav>", "<enter>"],
+]
+
+[[layers]]
+name = "nav"
+rows = [
+    ["<f1>", "<f2>", "<f3>", "<f4>", "<f5>", "<f6>", "<f7>", "<f8>", "<f9>", "<f10>", "<f11>", "<f12>"],
+    ["<esc>", "<ins>", "<home>", "<up>", "<end>", "<pgup>"],
+    ["<tab>", "<del>", "<left>", "<down>", "<right>", "<pgdn>"],
+    [{ tap = "<shift>", width = 1.5 }, "<super>", "./", "../", "~/", "$(", "${", { tap = "<bksp>", width = 1.5 }],
+    ["<ctrl>", "<layer:sym>", "<alt>", { tap = "<space>", width = 3.0 }, ",", ".", "<layer:nav>", "<enter>"],
+]

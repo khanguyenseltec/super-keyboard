@@ -1,0 +1,12 @@
+[application]
+name = "Super Keyboard"
+
+[bundle]
+identifier = "io.github.tristanseltec.superkeyboard"
+publisher = "Super Keyboard contributors"
+category = "Utility"
+short_description = "A developer-focused virtual keyboard."
+long_description = """
+Super Keyboard puts brackets, operators, Esc, Tab, Ctrl, arrows and F-keys where
+programmers need them, with layouts defined as code.
+"""

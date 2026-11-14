@@ -1,0 +1,28 @@
+name: Feature or layout idea
+description: Suggest a feature, a key, a layer or a whole layout.
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The editing, terminal or coding task this would help with.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How it could work. Layout snippets in TOML are welcome.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Layout / keys
+        - Engine (modifiers, layers, snippets)
+        - UI / theming
+        - Android IME
+        - Ubuntu desktop output
+        - Docs

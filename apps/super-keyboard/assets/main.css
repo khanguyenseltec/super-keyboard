@@ -1,0 +1,168 @@
+:root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --key: #232833;
+    --key-named: #1c2029;
+    --key-pressed: #2f3644;
+    --text: #e6e9ef;
+    --muted: #8b93a3;
+    --accent: #7aa2f7;
+    --accent-strong: #f7768e;
+    --radius: 6px;
+    --gap: 4px;
+    font-family: "JetBrains Mono", "Fira Code", "Ubuntu Mono", ui-monospace, monospace;
+    color-scheme: dark;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--panel);
+    font-size: 13px;
+}
+
+.bar .title {
+    font-weight: 700;
+}
+
+.bar .status {
+    color: var(--muted);
+    flex: 1;
+}
+
+.bar .clear {
+    background: none;
+    border: 1px solid var(--key-pressed);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font: inherit;
+    padding: 2px 10px;
+}
+
+.preview {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    min-height: 0;
+    padding: 12px;
+}
+
+.preview .text {
+    flex: 1;
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 15px;
+    tab-size: 4;
+}
+
+.caret {
+    display: inline-block;
+    width: 0.6ch;
+    height: 1.1em;
+    vertical-align: text-bottom;
+    background: var(--accent);
+    animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.preview .log {
+    width: 14ch;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 12px;
+    overflow: hidden;
+}
+
+.keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    padding: var(--gap);
+    background: var(--panel);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.row {
+    display: flex;
+    gap: var(--gap);
+}
+
+.key {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 48px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--key);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+.key:active {
+    background: var(--key-pressed);
+}
+
+.key.named,
+.key.mod,
+.key.layer {
+    background: var(--key-named);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.key.op {
+    font-size: 14px;
+}
+
+.key.oneshot,
+.key.layer.active {
+    color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.key.locked {
+    color: var(--bg);
+    background: var(--accent);
+}
+
+@media (min-width: 900px) {
+    .keyboard {
+        align-self: center;
+        width: 900px;
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+}

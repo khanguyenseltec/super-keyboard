@@ -1,0 +1,28 @@
+[package]
+name = "super-keyboard"
+description = "A developer-focused virtual keyboard for Ubuntu desktop and Android."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+super-keyboard-core.workspace = true
+dioxus.workspace = true
+
+[features]
+default = ["desktop"]
+# `dx serve --desktop` / `dx serve --android` enable these.
+desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
+# Browser preview: handy for layout work, not a shipping target.
+web = ["dioxus/web"]
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+dioxus-ssr = "0.7.10"

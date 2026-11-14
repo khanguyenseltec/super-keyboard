@@ -1,0 +1,12 @@
+/target
+/dist
+# dx build output and generated Android project
+/apps/*/target
+.dx/
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+# Local agent state
+.claude/worktrees/

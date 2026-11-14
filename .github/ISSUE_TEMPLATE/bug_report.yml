@@ -1,0 +1,35 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ["bug", "triage"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Ubuntu desktop (Wayland)
+        - Ubuntu desktop (X11)
+        - Android
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "v0.1.0 or a commit SHA"
+  - type: textarea
+    id: details
+    attributes:
+      label: Device, OS version and logs
+      description: >
+        Please do not paste anything you typed with the keyboard that might be private
+        (passwords, tokens, messages).
+      render: text
