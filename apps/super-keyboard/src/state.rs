@@ -60,8 +60,11 @@ impl AppState {
     /// Loads the configuration and creates the state in the current scope.
     pub fn load(env: &AppEnv) -> Self {
         let config = UserConfig::load(env.config_dir.clone());
-        let keyboard =
-            KeyboardController::new(config.keymap(), config.settings.keys.gesture_config());
+        let keyboard = KeyboardController::new(
+            config.keymap(),
+            config.settings.keys.gesture_config(),
+            config.settings.vietnamese,
+        );
         Self {
             config: Signal::new(config),
             keyboard,
@@ -244,6 +247,13 @@ impl AppState {
         });
     }
 
+    /// Switches Vietnamese typing on or off.
+    pub fn toggle_vietnamese(&mut self) {
+        self.update_settings(|settings| {
+            settings.vietnamese.enabled = !settings.vietnamese.enabled;
+        });
+    }
+
     pub fn toggle_panel(&mut self, panel: Panel) {
         let next = if *self.panel.peek() == panel {
             Panel::Preview
@@ -255,12 +265,17 @@ impl AppState {
 
     /// Brings the keyboard in line with the configuration.
     fn sync_keyboard(&mut self) {
-        let (keymap, gestures) = {
+        let (keymap, gestures, vietnamese) = {
             let config = self.config.peek();
-            (config.keymap(), config.settings.keys.gesture_config())
+            (
+                config.keymap(),
+                config.settings.keys.gesture_config(),
+                config.settings.vietnamese,
+            )
         };
         self.keyboard.set_keymap(keymap);
         self.keyboard.set_gesture_config(gestures);
+        self.keyboard.set_vietnamese(vietnamese);
     }
 }
 
@@ -391,6 +406,21 @@ mod tests {
                 "the fixed theme keeps its slot"
             );
             assert_eq!(theme.dark, "nord");
+        });
+    }
+
+    #[test]
+    fn the_vietnamese_switch_reaches_the_keyboard() {
+        with_state(AppEnv::isolated(), |mut state| {
+            assert!(!state.keyboard.vietnamese.peek().options().enabled);
+            state.toggle_vietnamese();
+            assert!(state.config.peek().settings.vietnamese.enabled);
+            assert!(state.keyboard.vietnamese.peek().options().enabled);
+            state.update_settings(|s| s.vietnamese.method = super_keyboard_core::InputMethod::Vni);
+            assert_eq!(
+                state.keyboard.vietnamese.peek().options().method,
+                super_keyboard_core::InputMethod::Vni
+            );
         });
     }
 

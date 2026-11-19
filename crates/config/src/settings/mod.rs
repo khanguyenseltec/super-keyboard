@@ -1,5 +1,5 @@
 //! `settings.toml`: the profile, theme, key timing and size, keyboard size,
-//! style, the profile menu and the user's profiles.
+//! Vietnamese typing, style, the profile menu and the user's profiles.
 //!
 //! ```toml
 //! profile = "coding"    # a preset, one of [[profiles]], or a layout's file name
@@ -21,6 +21,12 @@
 //!
 //! [preview]
 //! show-log = true
+//!
+//! [vietnamese]
+//! enabled = true        # type Vietnamese with the keys
+//! method = "telex"      # "telex" or "vni"
+//! tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
+//! check-spelling = true # only change syllables that can be Vietnamese
 //!
 //! [style.dark]
 //! accent = "#ff9e64"
@@ -47,7 +53,7 @@ pub use error::SettingsError;
 
 use std::{fmt, time::Duration};
 
-use super_keyboard_core::{Arrangement, GestureConfig};
+use super_keyboard_core::{Arrangement, GestureConfig, VietnameseOptions};
 
 use crate::{profile::ProfileSpec, style::Style, theme::Appearance};
 
@@ -60,6 +66,8 @@ pub struct Settings {
     pub keys: KeySettings,
     pub keyboard: KeyboardSettings,
     pub preview: PreviewSettings,
+    /// Telex or VNI typing: `[vietnamese]`.
+    pub vietnamese: VietnameseOptions,
     pub style: Style,
     /// The order of the profile menu, and which profiles it hides.
     pub menu: Arrangement,
@@ -339,6 +347,7 @@ impl Default for PreviewSettings {
 mod tests {
     use super::*;
     use crate::style::{StyleValue, StyleVar, ValueKind};
+    use super_keyboard_core::{InputMethod, ToneStyle};
 
     #[test]
     fn empty_file_is_the_defaults() {
@@ -373,6 +382,11 @@ mod tests {
             align = "left"
             [preview]
             show-log = false
+            [vietnamese]
+            enabled = true
+            method = "vni"
+            tone-style = "modern"
+            check-spelling = false
             [style]
             radius = "10px"
             [style.dark]
@@ -412,6 +426,15 @@ mod tests {
             }
         );
         assert!(!settings.preview.show_log);
+        assert_eq!(
+            settings.vietnamese,
+            VietnameseOptions {
+                enabled: true,
+                method: InputMethod::Vni,
+                tone_style: ToneStyle::Modern,
+                check_spelling: false,
+            }
+        );
         let value = |kind, v: &str| StyleValue::parse(kind, v).unwrap();
         assert_eq!(
             settings.style.both.get(&StyleVar::Radius),

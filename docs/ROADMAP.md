@@ -30,6 +30,8 @@ preview, on Ubuntu desktop and on an Android phone (running as an app).
 - [x] Keyboard width, height and position as a share of the window, up to a full-window keyboard that resizes with it
 - [x] Responsive key sizing for phone portrait and landscape, tablet and desktop
 - [x] Property tests for the engine with `proptest`
+- [x] Vietnamese typing: Telex and VNI, classic or modern tone placement, spelling check, a VI / EN switch and a settings tab
+- [x] Vietnamese with the physical keyboard in every Ubuntu app: an IBus engine sharing the app's settings, shipped in the `.deb`
 
 ## Phase 2: Android system keyboard, milestone `v0.2`
 

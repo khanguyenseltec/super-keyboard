@@ -1,4 +1,5 @@
-//! The bar above the preview: layer, profile picker and panel buttons.
+//! The bar above the preview: layer, the Vietnamese switch, profile picker and
+//! panel buttons.
 
 use dioxus::prelude::*;
 
@@ -24,6 +25,15 @@ pub fn TopBar() -> Element {
         (keyboard.layer().name.clone(), keyboard.layer_index() == 0)
     };
     let settings_open = (state.panel)() == Panel::Settings;
+    let vi = state.config.read().settings.vietnamese;
+    let vi_title = if vi.enabled {
+        format!(
+            "Vietnamese ({}): on. Tap for plain keys.",
+            vi.method.label()
+        )
+    } else {
+        "Vietnamese: off. Tap to type Vietnamese.".to_owned()
+    };
 
     rsx! {
         header { class: "bar",
@@ -35,6 +45,16 @@ pub fn TopBar() -> Element {
                 disabled: on_base,
                 onclick: move |_| state.keyboard.show_base_layer(),
                 "{layer}"
+            }
+            button {
+                class: "lang-toggle",
+                role: "switch",
+                aria_checked: vi.enabled,
+                aria_label: "Vietnamese typing",
+                title: "{vi_title}",
+                onclick: move |_| state.toggle_vietnamese(),
+                span { class: "lang-code", if vi.enabled { "VI" } else { "EN" } }
+                span { class: "lang-method", "{vi.method.label()}" }
             }
             select {
                 class: "profile-picker",

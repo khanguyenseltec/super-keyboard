@@ -1,5 +1,5 @@
 //! What has been typed so far, with the cursor and selection, plus a log of
-//! recent output.
+//! recent output. The Vietnamese syllable being typed is underlined.
 
 use dioxus::prelude::*;
 
@@ -14,12 +14,21 @@ pub fn Preview() -> Element {
     let show_log = state.config.read().settings.preview.show_log;
     let sink = state.keyboard.sink.read();
     let view = sink.buffer().view();
+    let composing = state.keyboard.vietnamese.read().composing();
+    // The syllable sits just before the cursor while it is being typed.
+    let (before, composing) = match view.before.strip_suffix(composing.as_str()) {
+        Some(rest) if !composing.is_empty() && view.selected.is_empty() => (rest, composing),
+        _ => (view.before, String::new()),
+    };
     let recent: Vec<&str> = sink.log().rev().take(LOG_LINES).collect();
 
     rsx! {
         section { class: "preview",
             pre { class: "text", aria_label: "Preview",
-                "{view.before}"
+                "{before}"
+                if !composing.is_empty() {
+                    span { class: "composing", "{composing}" }
+                }
                 if view.cursor_at_start {
                     Caret {}
                 }

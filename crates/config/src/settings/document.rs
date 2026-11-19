@@ -74,6 +74,23 @@ align = "center"
 # Show recent output beside the preview text.
 show-log = true
 
+[vietnamese]
+# Type Vietnamese with the keys: key sequences become letters with marks as you
+# type, so "Vieejt" (Telex) or "Vie65t" (VNI) is "Việt". The VI button in the
+# top bar switches it on and off.
+enabled = false
+# "telex": s f r x j = sắc huyền hỏi ngã nặng, z removes the tone;
+#          aa ee oo = â ê ô, aw = ă, ow uw (or w) = ơ ư, dd = đ.
+# "vni":   1 2 3 4 5 = sắc huyền hỏi ngã nặng, 0 removes the tone;
+#          6 = â ê ô, 8 = ă, 7 = ơ ư, 9 = đ.
+method = "telex"
+# Where the tone goes in oa, oe and uy: "classic" (hòa, khỏe, thủy) or
+# "modern" (hoà, khoẻ, thuỷ).
+tone-style = "classic"
+# Only change syllables that can be Vietnamese, so most English words and code
+# type as written.
+check-spelling = true
+
 # Changes to the theme: for every theme, then for dark or light themes only.
 # Values are CSS colours (#7aa2f7, rgb(...), oklch(...), colour names), lengths
 # (6px, 0.5rem, calc(...)), font weights (normal, bold, 500) and installed fonts
@@ -185,6 +202,30 @@ impl SettingsDocument {
                     "align",
                     align,
                     keyboard.align == defaults.keyboard.align,
+                )
+        });
+
+        let (vi, default_vi) = (&settings.vietnamese, &defaults.vietnamese);
+        edit_section(root, "vietnamese", |table| {
+            let method = Scalar::Str(vi.method.name().into());
+            let tone_style = Scalar::Str(vi.tone_style.name().into());
+            set(
+                table,
+                "enabled",
+                Scalar::Bool(vi.enabled),
+                vi.enabled == default_vi.enabled,
+            ) | set(table, "method", method, vi.method == default_vi.method)
+                | set(
+                    table,
+                    "tone-style",
+                    tone_style,
+                    vi.tone_style == default_vi.tone_style,
+                )
+                | set(
+                    table,
+                    "check-spelling",
+                    Scalar::Bool(vi.check_spelling),
+                    vi.check_spelling == default_vi.check_spelling,
                 )
         });
 
@@ -513,6 +554,27 @@ accent = "#ff9e64"
 
         let text = saved(Some("profile = \"mine\"\n"), |s| s.profile = None);
         assert!(!text.contains("profile"), "{text}");
+    }
+
+    #[test]
+    fn saves_vietnamese_typing() {
+        use super_keyboard_core::InputMethod;
+        let text = saved(Some("theme = \"dark\"\n"), |s| {
+            s.vietnamese.enabled = true;
+            s.vietnamese.method = InputMethod::Vni;
+        });
+        assert!(
+            text.contains("[vietnamese]\nenabled = true\nmethod = \"vni\"\n"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("tone-style"),
+            "defaults are not added:\n{text}"
+        );
+
+        let text = saved(None, |s| s.vietnamese.enabled = true);
+        assert!(text.contains("\nenabled = true\n"), "{text}");
+        assert!(text.contains("# \"telex\": s f r x j"), "{text}");
     }
 
     #[test]

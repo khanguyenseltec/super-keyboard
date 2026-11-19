@@ -12,7 +12,7 @@ use crate::{
     profile::{ProfileFile, is_valid_name, validate_profiles},
     style::{Style, StyleValue, StyleVar},
 };
-use super_keyboard_core::Arrangement;
+use super_keyboard_core::{Arrangement, InputMethod, ToneStyle, VietnameseOptions};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -27,6 +27,8 @@ pub(super) struct SettingsFile {
     keyboard: KeyboardFile,
     #[serde(default)]
     preview: PreviewFile,
+    #[serde(default)]
+    vietnamese: VietnameseFile,
     #[serde(default)]
     style: StyleFile,
     #[serde(default)]
@@ -71,6 +73,38 @@ struct KeyboardFile {
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 struct PreviewFile {
     show_log: Option<bool>,
+}
+
+/// `[vietnamese]`: Telex or VNI typing.
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+struct VietnameseFile {
+    enabled: Option<bool>,
+    method: Option<String>,
+    tone_style: Option<String>,
+    check_spelling: Option<bool>,
+}
+
+impl VietnameseFile {
+    fn validate(self) -> Result<VietnameseOptions, SettingsError> {
+        let defaults = VietnameseOptions::default();
+        Ok(VietnameseOptions {
+            enabled: self.enabled.unwrap_or(defaults.enabled),
+            method: match self.method {
+                None => defaults.method,
+                Some(name) => {
+                    InputMethod::from_name(&name).ok_or(SettingsError::UnknownInputMethod(name))?
+                }
+            },
+            tone_style: match self.tone_style {
+                None => defaults.tone_style,
+                Some(name) => {
+                    ToneStyle::from_name(&name).ok_or(SettingsError::UnknownToneStyle(name))?
+                }
+            },
+            check_spelling: self.check_spelling.unwrap_or(defaults.check_spelling),
+        })
+    }
 }
 
 /// `[style]` holds variables for every theme; `[style.dark]` and
@@ -118,6 +152,7 @@ impl SettingsFile {
                     .show_log
                     .unwrap_or(PreviewSettings::default().show_log),
             },
+            vietnamese: self.vietnamese.validate()?,
             style: self.style.validate()?,
             menu: Arrangement {
                 order: self.menu.order,
@@ -308,6 +343,15 @@ mod tests {
             r#"`keyboard.align` must be "center", "left" or "right", not "top""#
         );
         assert!(error("[keyboard]\nsize = 3").contains("unknown field `size`"));
+        assert_eq!(
+            error("[vietnamese]\nmethod = \"viqr\""),
+            r#"`vietnamese.method` must be "telex" or "vni", not "viqr""#
+        );
+        assert_eq!(
+            error("[vietnamese]\ntone-style = \"new\""),
+            r#"`vietnamese.tone-style` must be "classic" or "modern", not "new""#
+        );
+        assert!(error("[vietnamese]\nenable = true").contains("unknown field `enable`"));
         assert_eq!(
             Settings::from_toml("[keyboard]\nwidth = \"auto\"\nheight = \"auto\"").unwrap(),
             Settings::default()

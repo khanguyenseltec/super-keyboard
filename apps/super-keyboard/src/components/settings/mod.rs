@@ -1,5 +1,5 @@
-//! The settings panel: tabs for general settings, themes, the sections of the
-//! active profile, and the profiles and their menu.
+//! The settings panel: tabs for general settings, Vietnamese typing, themes,
+//! the sections of the active profile, and the profiles and their menu.
 //!
 //! Changes apply at once and are saved to `settings.toml`, keeping the file's
 //! comments. Styles, themes and layouts are edited as files; the panel says
@@ -10,6 +10,7 @@ mod general;
 mod profiles;
 mod sections;
 mod themes;
+mod vietnamese;
 
 use dioxus::prelude::*;
 
@@ -18,22 +19,31 @@ use general::GeneralSettings;
 use profiles::ProfilesEditor;
 use sections::SectionsEditor;
 use themes::ThemesEditor;
+use vietnamese::VietnameseSettings;
 
 /// A tab of the settings panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
     General,
+    Vietnamese,
     Themes,
     Sections,
     Profiles,
 }
 
 impl Tab {
-    const ALL: [Self; 4] = [Self::General, Self::Themes, Self::Sections, Self::Profiles];
+    const ALL: [Self; 5] = [
+        Self::General,
+        Self::Vietnamese,
+        Self::Themes,
+        Self::Sections,
+        Self::Profiles,
+    ];
 
     fn label(self) -> &'static str {
         match self {
             Self::General => "General",
+            Self::Vietnamese => "Tiếng Việt",
             Self::Themes => "Themes",
             Self::Sections => "Sections",
             Self::Profiles => "Profiles",
@@ -71,6 +81,7 @@ pub fn SettingsPanel() -> Element {
             }
             match tab() {
                 Tab::General => rsx! { GeneralSettings {} },
+                Tab::Vietnamese => rsx! { VietnameseSettings {} },
                 Tab::Themes => rsx! { ThemesEditor {} },
                 Tab::Sections => rsx! { SectionsEditor {} },
                 Tab::Profiles => rsx! { ProfilesEditor {} },
@@ -156,6 +167,33 @@ mod tests {
             assert!(html.contains(label), "{label}: {html}");
         }
         assert!(html.contains("Share of window"), "{html}");
+    }
+
+    #[test]
+    fn the_vietnamese_tab_shows_both_methods_and_their_rules() {
+        let html = render(|| {
+            use_context_provider(|| AppState::load(&AppEnv::isolated()));
+            rsx! { VietnameseSettings {} }
+        });
+        for text in [
+            "Tiếng Việt",
+            r#"role="switch" aria-checked=false"#,
+            ">Telex</span>",
+            ">VNI</span>",
+            "Tiếng Việt</span>",
+            "hòa khỏe thủy",
+            "hoà khoẻ thuỷ",
+            "Xin chào các bạn",
+            "Không có gì quý hơn độc lập tự do",
+            "Check spelling",
+        ] {
+            assert!(html.contains(text), "{text}: {html}");
+        }
+        // Telex is the default: its card is the one in use.
+        let telex = html.find(">Telex</span>").unwrap();
+        let vni = html.find(">VNI</span>").unwrap();
+        let in_use = html.find(">in use</span>").unwrap();
+        assert!(telex < in_use && in_use < vni, "{html}");
     }
 
     #[test]

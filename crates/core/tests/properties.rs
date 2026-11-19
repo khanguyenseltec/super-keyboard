@@ -5,8 +5,9 @@ use std::time::Duration;
 
 use proptest::prelude::*;
 use super_keyboard_core::{
-    Action, Arrangement, Gestures, KeyId, Keyboard, Keymap, Latch, Layout, Modifier, Motion,
-    PressKind, TextBuffer, Trigger,
+    Action, Arrangement, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch, Layout,
+    Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink, TextBuffer,
+    ToneStyle, Trigger, VietnameseOptions,
 };
 
 /// Every key id of the built-in layout.
@@ -403,6 +404,55 @@ fn modifier_and_layer_keys_produce_no_output() {
         let tap = kb.key(id).unwrap().tap.clone();
         if is_modifier_or_layer(&tap) {
             assert_eq!(kb.tap(id), None, "{tap:?}");
+        }
+    }
+}
+
+/// A key for the Vietnamese property: a letter, a digit, a space or Backspace.
+fn vietnamese_key() -> impl Strategy<Value = Output> {
+    prop_oneof![
+        8 => proptest::sample::select(
+            "aeiouyAEOdDswfrxjzWbcghknmptqv0123456789".chars().collect::<Vec<_>>()
+        )
+        .prop_map(|c| Output::Text(c.into())),
+        1 => Just(Output::named(NamedKey::Space, Modifiers::NONE)),
+        2 => Just(Output::named(NamedKey::Backspace, Modifiers::NONE)),
+    ]
+}
+
+proptest! {
+    /// Whatever is typed, the text on screen ends with the syllable the composer
+    /// is working on: the Backspaces it sends only ever erase its own text.
+    #[test]
+    fn vietnamese_only_rewrites_its_own_syllable(
+        keys in prop::collection::vec(vietnamese_key(), 0..80),
+        vni in any::<bool>(),
+        modern in any::<bool>(),
+        check_spelling in any::<bool>(),
+    ) {
+        let mut composer = Composer::new(VietnameseOptions {
+            enabled: true,
+            method: if vni { InputMethod::Vni } else { InputMethod::Telex },
+            tone_style: if modern { ToneStyle::Modern } else { ToneStyle::Classic },
+            check_spelling,
+        });
+        let mut sink = PreviewSink::default();
+        sink.emit(Output::Text("> ".into()));
+        let backspace = Output::named(NamedKey::Backspace, Modifiers::NONE);
+        for key in keys {
+            // The text before the syllable is only the user's to erase, with a
+            // Backspace while no syllable is in progress.
+            let composing = composer.composing();
+            let fixed = sink.text().strip_suffix(composing.as_str()).unwrap().to_owned();
+            let may_erase = key == backspace && composing.is_empty();
+            for output in composer.process(key) {
+                sink.emit(output);
+            }
+            let composing = composer.composing();
+            prop_assert!(sink.text().ends_with(&composing), "{:?} / {composing:?}", sink.text());
+            if !may_erase {
+                prop_assert!(sink.text().starts_with(&fixed), "{:?} lost {fixed:?}", sink.text());
+            }
         }
     }
 }

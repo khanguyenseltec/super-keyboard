@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+  <name>org.freedesktop.IBus.SuperKeyboard</name>
+  <description>Super Keyboard: Vietnamese typing with Telex or VNI</description>
+  <exec>/usr/libexec/super-keyboard-ibus --ibus</exec>
+  <version>0.1.0</version>
+  <author>Super Keyboard contributors</author>
+  <license>MIT OR Apache-2.0</license>
+  <homepage>https://github.com/tristanseltec/super-keyboard</homepage>
+  <textdomain></textdomain>
+  <engines>
+    <engine>
+      <name>super-keyboard</name>
+      <longname>Vietnamese (Super Keyboard)</longname>
+      <description>Telex and VNI, shared with the Super Keyboard on-screen keyboard</description>
+      <language>vi</language>
+      <license>MIT OR Apache-2.0</license>
+      <author>Super Keyboard contributors</author>
+      <icon>input-keyboard</icon>
+      <layout>us</layout>
+      <symbol>VI</symbol>
+      <setup>/usr/bin/super-keyboard</setup>
+      <rank>0</rank>
+    </engine>
+  </engines>
+</component>
