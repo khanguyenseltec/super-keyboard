@@ -72,11 +72,11 @@ including Ctrl and Alt chords in Termux, and Vietnamese.
 
 - [ ] Spike and decision: host the Dioxus UI inside an `InputMethodService` ([#10](https://github.com/tristanseltec/super-keyboard/issues/10), [options](ARCHITECTURE.md#android-running-as-the-system-keyboard))
 - [ ] Android sink: `commitText`, `sendKeyEvent` with meta state, `deleteSurroundingText` ([#11](https://github.com/tristanseltec/super-keyboard/issues/11))
-- [ ] Vietnamese through `setComposingText`, so the syllable is underlined in the app as on the desktop
+- [ ] Vietnamese through `setComposingText`, so the syllable is underlined in the app as on the desktop ([#21](https://github.com/tristanseltec/super-keyboard/issues/21))
 - [ ] Respect the editor: password fields, the Enter action (Go, Send, Search), input types ([#12](https://github.com/tristanseltec/super-keyboard/issues/12))
-- [ ] Onboarding: enable the keyboard, pick a profile, try Vietnamese
-- [ ] Measure touch-to-commit latency against the 16 ms budget
-- [ ] Haptic and sound feedback on key press (each a setting, off by default for sound)
+- [ ] Onboarding: enable the keyboard, pick a profile, try Vietnamese ([#22](https://github.com/tristanseltec/super-keyboard/issues/22))
+- [ ] Measure touch-to-commit latency against the 16 ms budget ([#23](https://github.com/tristanseltec/super-keyboard/issues/23))
+- [ ] Haptic and sound feedback on key press (each a setting, off by default for sound) ([#24](https://github.com/tristanseltec/super-keyboard/issues/24))
 
 ## v0.3: Ubuntu desktop keyboard
 
@@ -84,49 +84,49 @@ including Ctrl and Alt chords in Termux, and Vietnamese.
 keyboard types into a focused terminal or editor without taking focus.
 
 - [ ] Spike and decision: a keyboard window that never takes focus ([#13](https://github.com/tristanseltec/super-keyboard/issues/13), [options](ARCHITECTURE.md#ubuntu-desktop-typing-into-other-windows))
-- [ ] **IBus sink**: send the on-screen keyboard's text and keys to `super-keyboard-ibus`, which already types into the focused app on Wayland and X11, with no root and no udev rule
+- [ ] **IBus sink**: send the on-screen keyboard's text and keys to `super-keyboard-ibus`, which already types into the focused app on Wayland and X11, with no root and no udev rule ([#25](https://github.com/tristanseltec/super-keyboard/issues/25))
 - [ ] uinput sink with XKB text mapping, for keys IBus cannot send (chords to the compositor) ([#14](https://github.com/tristanseltec/super-keyboard/issues/14))
 - [ ] xdg-desktop-portal RemoteDesktop sink as a no-setup fallback ([#15](https://github.com/tristanseltec/super-keyboard/issues/15))
-- [ ] XTest sink for X11 sessions
-- [ ] Always on top, dock to a screen edge, show/hide shortcut and a panel icon
-- [ ] Light up on-screen keys as the physical keyboard is pressed, so both keyboards feel like one
+- [ ] XTest sink for X11 sessions ([#26](https://github.com/tristanseltec/super-keyboard/issues/26))
+- [ ] Always on top, dock to a screen edge, show/hide shortcut and a panel icon ([#27](https://github.com/tristanseltec/super-keyboard/issues/27))
+- [ ] Light up on-screen keys as the physical keyboard is pressed, so both keyboards feel like one ([#28](https://github.com/tristanseltec/super-keyboard/issues/28))
 - [x] `.deb` package from `dx bundle`, with the IBus engine, app icons and maintainer scripts
 
 ## v0.4: Developer power features
 
 - [ ] Snippets with placeholders and language profiles: Rust, Python, TypeScript, shell, Git, Vim ([#16](https://github.com/tristanseltec/super-keyboard/issues/16))
 - [ ] Auto-pair brackets and quotes, as a toggle (**good first issue**, [#17](https://github.com/tristanseltec/super-keyboard/issues/17))
-- [ ] Record and replay macros
-- [ ] Per-app profiles: switch profile by Android package name or desktop window class
-- [ ] Clipboard history: opt-in, in memory, off in password fields
-- [ ] Command palette key: fuzzy search over snippets and commands
-- [ ] Visual layout editor that writes TOML
+- [ ] Record and replay macros ([#29](https://github.com/tristanseltec/super-keyboard/issues/29))
+- [ ] Per-app profiles: switch profile by Android package name or desktop window class ([#30](https://github.com/tristanseltec/super-keyboard/issues/30))
+- [ ] Clipboard history: opt-in, in memory, off in password fields ([#31](https://github.com/tristanseltec/super-keyboard/issues/31))
+- [ ] Command palette key: fuzzy search over snippets and commands ([#32](https://github.com/tristanseltec/super-keyboard/issues/32))
+- [ ] Visual layout editor that writes TOML ([#33](https://github.com/tristanseltec/super-keyboard/issues/33))
 
 ## v0.5: Better Vietnamese
 
 For everyone who types Vietnamese all day, and for the Vietnamese developer community.
 
-- [ ] **Gõ tắt** (shorthand): your own abbreviations that expand as you type, such as `vn` → `Việt Nam`, in `settings.toml`
-- [ ] Auto-restore English: a word that cannot be Vietnamese goes back to the keys typed when it ends (`tét` → `test`)
-- [ ] Remember VI or EN per app on the desktop (a terminal in EN, a chat app in VI)
-- [ ] More methods: VIQR, and Telex options (no lone `w` → `ư`, brackets for `ơ` and `ư`)
-- [ ] Output in NFC (default) or NFD Unicode, for the rare app that needs it
-- [ ] A Vietnamese phone layout section: `ă â đ ê ô ơ ư` one tap away, for typing without Telex or VNI
-- [ ] The app's interface in Vietnamese, the first of its translations
-- [ ] An Fcitx5 add-on beside the IBus engine, for KDE and other desktops
+- [ ] **Gõ tắt** (shorthand): your own abbreviations that expand as you type, such as `vn` → `Việt Nam`, in `settings.toml` ([#34](https://github.com/tristanseltec/super-keyboard/issues/34))
+- [ ] Auto-restore English: a word that cannot be Vietnamese goes back to the keys typed when it ends (`tét` → `test`) ([#35](https://github.com/tristanseltec/super-keyboard/issues/35))
+- [ ] Remember VI or EN per app on the desktop (a terminal in EN, a chat app in VI) ([#36](https://github.com/tristanseltec/super-keyboard/issues/36))
+- [ ] More methods: VIQR, and Telex options (no lone `w` → `ư`, brackets for `ơ` and `ư`) (**good first issue**, [#37](https://github.com/tristanseltec/super-keyboard/issues/37))
+- [ ] Output in NFC (default) or NFD Unicode, for the rare app that needs it (**good first issue**, [#38](https://github.com/tristanseltec/super-keyboard/issues/38))
+- [ ] A Vietnamese phone layout section: `ă â đ ê ô ơ ư` one tap away, for typing without Telex or VNI (**good first issue**, [#39](https://github.com/tristanseltec/super-keyboard/issues/39))
+- [ ] The app's interface in Vietnamese, the first of its translations ([#40](https://github.com/tristanseltec/super-keyboard/issues/40))
+- [ ] An Fcitx5 add-on beside the IBus engine, for KDE and other desktops ([#41](https://github.com/tristanseltec/super-keyboard/issues/41))
 
 ## v1.0: Ready for everyone
 
 **Done when** someone who has never heard of Rust can install it from the place they install
 everything else, and it keeps working after updates.
 
-- [ ] Releases from CI: signed `.deb`, AppImage and APK on GitHub Releases, with checksums and notes
-- [ ] Ubuntu PPA and Flathub; F-Droid and Google Play, without the `INTERNET` permission
-- [ ] Stable layout, theme and settings formats, with versioning and automatic migration
-- [ ] Accessibility review: screen readers, large keys, high-contrast themes, reduced motion
-- [ ] Security review of the IBus engine, the sinks and the file loaders; fuzzing of the parsers
-- [ ] A documentation site with guides, the key notation and a theme gallery
-- [ ] Performance budget in CI: start-up time, memory and key latency
+- [ ] Releases from CI: signed `.deb`, AppImage and APK on GitHub Releases, with checksums and notes ([#42](https://github.com/tristanseltec/super-keyboard/issues/42))
+- [ ] Ubuntu PPA and Flathub; F-Droid and Google Play, without the `INTERNET` permission ([#43](https://github.com/tristanseltec/super-keyboard/issues/43))
+- [ ] Stable layout, theme and settings formats, with versioning and automatic migration ([#44](https://github.com/tristanseltec/super-keyboard/issues/44))
+- [ ] Accessibility review: screen readers, large keys, high-contrast themes, reduced motion ([#45](https://github.com/tristanseltec/super-keyboard/issues/45))
+- [ ] Security review of the IBus engine, the sinks and the file loaders; fuzzing of the parsers ([#46](https://github.com/tristanseltec/super-keyboard/issues/46))
+- [ ] A documentation site with guides, the key notation and a theme gallery ([#47](https://github.com/tristanseltec/super-keyboard/issues/47))
+- [ ] Performance budget in CI: start-up time, memory and key latency ([#48](https://github.com/tristanseltec/super-keyboard/issues/48))
 
 ## Later
 

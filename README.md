@@ -428,8 +428,8 @@ Super Keyboard is early, so there is room to shape it, and it is looking for col
 | You are... | Start here |
 |---|---|
 | 🤖 An **Android** developer (Kotlin, `InputMethodService`, JNI) | [Host the Dioxus UI inside an InputMethodService](https://github.com/tristanseltec/super-keyboard/issues/10) |
-| 🐧 A **Linux desktop** developer (Wayland, GNOME, IBus, uinput) | [A keyboard window that never takes focus](https://github.com/tristanseltec/super-keyboard/issues/13), then the IBus sink |
-| 🇻🇳 A **Vietnamese** typist or input-method developer | Try the Telex and VNI rules on your own writing and [report a word that types wrong](https://github.com/tristanseltec/super-keyboard/issues/new); shorthand and VIQR are on the [v0.5 list](docs/ROADMAP.md#v05-better-vietnamese) |
+| 🐧 A **Linux desktop** developer (Wayland, GNOME, IBus, uinput) | [A keyboard window that never takes focus](https://github.com/tristanseltec/super-keyboard/issues/13), then the [IBus sink](https://github.com/tristanseltec/super-keyboard/issues/25) |
+| 🇻🇳 A **Vietnamese** typist or input-method developer | Try the Telex and VNI rules on your own writing and [report a word that types wrong](https://github.com/tristanseltec/super-keyboard/issues/new); [VIQR](https://github.com/tristanseltec/super-keyboard/issues/37) is a good first issue, and [shorthand](https://github.com/tristanseltec/super-keyboard/issues/34) is next |
 | 🦀 A **Rust or Dioxus** developer | [Good first issues](https://github.com/tristanseltec/super-keyboard/labels/good%20first%20issue) such as [auto-pair brackets](https://github.com/tristanseltec/super-keyboard/issues/17) |
 | ⌨️ A **keyboard and layout** nerd | Share a layout or a theme in [Discussions](https://github.com/tristanseltec/super-keyboard/discussions) |
 | 🎨 A **designer** | The [brand kit](docs/BRAND.md) is open: icons for Android, a docs site, a theme gallery |
