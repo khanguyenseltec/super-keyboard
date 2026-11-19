@@ -1,12 +1,14 @@
 //! The Vietnamese tab: the on/off switch, Telex or VNI, tone placement,
-//! spelling, and a box to try keys in.
+//! spelling, the Unicode form, and a box to try keys in.
 //!
 //! Every result shown (`aa` → `â`) is typed by the engine as the tab renders,
 //! so the cheat sheets always match what the keyboard does.
 
 use dioxus::prelude::*;
 use super_keyboard_config::Settings;
-use super_keyboard_core::{InputMethod, ToneStyle, VietnameseOptions, vietnamese::transliterate};
+use super_keyboard_core::{
+    InputMethod, ToneStyle, UnicodeForm, VietnameseOptions, vietnamese::transliterate,
+};
 
 use super::fields::ToggleField;
 use crate::state::AppState;
@@ -164,6 +166,24 @@ pub fn VietnameseSettings() -> Element {
                 "Only syllables that can be Vietnamese change, so " code { "for" } ", "
                 code { "class" } " and most code type as written. Typing a mark's key twice takes it off: "
                 code { "{undo_sample(vi.method)}" } "."
+            }
+
+            h3 { class: "group-title", "Unicode output · Bảng mã Unicode" }
+            div { class: "segmented", role: "radiogroup", aria_label: "Unicode output",
+                for form in UnicodeForm::ALL {
+                    button {
+                        key: "{form.name()}",
+                        class: "segment",
+                        role: "radio",
+                        aria_checked: vi.unicode_form == form,
+                        onclick: move |_| state.update_settings(|s| s.vietnamese.unicode_form = form),
+                        span { class: "segment-label", "{form.label()}" }
+                        span { class: "segment-sample", "{unicode_sample(vi, form)}" }
+                    }
+                }
+            }
+            p { class: "hint",
+                "Precomposed (dựng sẵn) writes each letter with its marks as one character, which is what almost every app expects. Decomposed (tổ hợp) writes the letter and then its marks; choose it only for an app that needs it."
             }
 
             h3 { class: "group-title", "Try it · Gõ thử" }
@@ -336,6 +356,27 @@ fn tone_sample(options: VietnameseOptions, style: ToneStyle) -> String {
     transliterate("hoaf khoer thuyr", options)
 }
 
+/// `Việt is 4 characters` or `Việt is 6 characters`: how many code points
+/// the engine writes for the word in `form`.
+fn unicode_sample(options: VietnameseOptions, form: UnicodeForm) -> String {
+    let options = VietnameseOptions {
+        method: InputMethod::Telex,
+        unicode_form: form,
+        ..options
+    };
+    let word = transliterate("Vieejt", options);
+    let count = word.chars().count();
+    // Shown precomposed either way, so the label reads the same in both.
+    let shown = transliterate(
+        "Vieejt",
+        VietnameseOptions {
+            unicode_form: UnicodeForm::Nfc,
+            ..options
+        },
+    );
+    format!("{shown} is {count} characters")
+}
+
 /// `ass → as` or `a11 → a1`.
 fn undo_sample(method: InputMethod) -> &'static str {
     match method {
@@ -386,6 +427,24 @@ mod tests {
     }
 
     #[test]
+    fn unicode_samples_count_what_the_engine_writes() {
+        let vni = VietnameseOptions {
+            method: InputMethod::Vni,
+            ..VietnameseOptions::default()
+        };
+        for options in [VietnameseOptions::default(), vni] {
+            assert_eq!(
+                unicode_sample(options, UnicodeForm::Nfc),
+                "Việt is 4 characters"
+            );
+            assert_eq!(
+                unicode_sample(options, UnicodeForm::Nfd),
+                "Việt is 6 characters"
+            );
+        }
+    }
+
+    #[test]
     fn examples_type_the_same_phrases_in_both_methods() {
         let telex = VietnameseOptions::default();
         let vni = VietnameseOptions {
@@ -421,6 +480,7 @@ mod tests {
                 method: InputMethod::Vni,
                 tone_style: ToneStyle::Modern,
                 check_spelling: false,
+                unicode_form: UnicodeForm::Nfd,
             },
             ..Settings::default()
         };

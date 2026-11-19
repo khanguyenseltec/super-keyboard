@@ -21,6 +21,10 @@
 //! Typing a mark's key twice takes it off and types the key (`ass` is `as`).
 //! With [`VietnameseOptions::check_spelling`], keys only change syllables that
 //! can be Vietnamese, so most English words and code type as written.
+//!
+//! Letters with marks are written precomposed (NFC: `ệ` is one character)
+//! unless [`VietnameseOptions::unicode_form`] asks for decomposed text (NFD:
+//! `e` and two combining marks), for the rare application that needs it.
 
 mod letters;
 mod word;
@@ -97,6 +101,40 @@ impl ToneStyle {
     }
 }
 
+/// How letters with marks are written in Unicode.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum UnicodeForm {
+    /// Precomposed: `ệ` is one character. What almost every application
+    /// expects.
+    #[default]
+    Nfc,
+    /// Decomposed: `ệ` is `e` followed by its combining marks.
+    Nfd,
+}
+
+impl UnicodeForm {
+    pub const ALL: [Self; 2] = [Self::Nfc, Self::Nfd];
+
+    /// The name used in `settings.toml`.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Nfc => "nfc",
+            Self::Nfd => "nfd",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|form| form.name() == name)
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Nfc => "Precomposed (NFC)",
+            Self::Nfd => "Decomposed (NFD)",
+        }
+    }
+}
+
 /// The `[vietnamese]` settings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VietnameseOptions {
@@ -106,6 +144,8 @@ pub struct VietnameseOptions {
     pub tone_style: ToneStyle,
     /// Only change syllables that can be Vietnamese.
     pub check_spelling: bool,
+    /// Write letters with marks precomposed or decomposed.
+    pub unicode_form: UnicodeForm,
 }
 
 impl Default for VietnameseOptions {
@@ -115,6 +155,7 @@ impl Default for VietnameseOptions {
             method: InputMethod::default(),
             tone_style: ToneStyle::default(),
             check_spelling: true,
+            unicode_form: UnicodeForm::default(),
         }
     }
 }
@@ -153,9 +194,20 @@ impl Composer {
         self.word.clear();
     }
 
-    /// The syllable being typed, as shown; empty between words.
+    /// The syllable being typed, as shown; empty between words. It is written
+    /// in [`VietnameseOptions::unicode_form`].
     pub fn composing(&self) -> String {
-        self.word.render(self.options.tone_style)
+        let text = self.word.render(self.options.tone_style);
+        match self.options.unicode_form {
+            UnicodeForm::Nfc => text,
+            UnicodeForm::Nfd => {
+                let mut decomposed = String::with_capacity(text.len() * 2);
+                for c in text.chars() {
+                    letters::decompose(c, &mut decomposed);
+                }
+                decomposed
+            }
+        }
     }
 
     /// Adds a typed character to the syllable, as an input method that shows
@@ -168,8 +220,8 @@ impl Composer {
         self.is_word_key(key) && self.word.push_key(key, &self.options)
     }
 
-    /// Takes the last character off the syllable. Returns false when there is
-    /// no syllable, so the Backspace belongs to the application.
+    /// Takes the last letter off the syllable, with its marks. Returns false
+    /// when there is no syllable, so the Backspace belongs to the application.
     pub fn backspace(&mut self) -> bool {
         if self.word.is_empty() {
             return false;
@@ -226,7 +278,8 @@ impl Composer {
 }
 
 /// Backspaces over what changed between `before` and `after`, then the rest
-/// of `after`.
+/// of `after`. One Backspace erases one code point, which in decomposed text
+/// is a letter or a single mark.
 fn diff(before: &str, after: &str) -> Vec<Output> {
     let common = before
         .chars()
@@ -283,6 +336,13 @@ mod tests {
     fn modern(options: VietnameseOptions) -> VietnameseOptions {
         VietnameseOptions {
             tone_style: ToneStyle::Modern,
+            ..options
+        }
+    }
+
+    fn nfd(options: VietnameseOptions) -> VietnameseOptions {
+        VietnameseOptions {
+            unicode_form: UnicodeForm::Nfd,
             ..options
         }
     }
@@ -397,6 +457,47 @@ mod tests {
             assert_eq!(transliterate(keys, telex()), classic, "{keys}");
             assert_eq!(transliterate(keys, modern(telex())), modern_form, "{keys}");
         }
+    }
+
+    #[test]
+    fn nfd_writes_each_letter_then_its_marks() {
+        let cases = [
+            ("Vieejt", "Vie\u{323}\u{302}t"),
+            ("dduwowngf", "đu\u{31b}o\u{31b}\u{300}ng"),
+            ("hoawcj", "hoa\u{323}\u{306}c"),
+            ("AAs", "A\u{302}\u{301}"),
+            ("Dday", "Đay"),
+            ("class", "class"),
+        ];
+        check(nfd(telex()), &cases);
+        check(nfd(vni()), &[("Vie65t", "Vie\u{323}\u{302}t")]);
+        // NFC, the default, writes the same words with one character a letter.
+        check(telex(), &[("Vieejt", "Việt"), ("hoawcj", "hoặc")]);
+    }
+
+    #[test]
+    fn nfd_erases_one_code_point_per_backspace() {
+        let mut composer = Composer::new(VietnameseOptions {
+            enabled: true,
+            ..nfd(telex())
+        });
+        let bksp = Output::named(NamedKey::Backspace, Modifiers::NONE);
+        let text = |s: &str| Output::Text(s.into());
+        assert_eq!(composer.process(text("e")), [text("e")]);
+        // A mark that goes last is only added.
+        assert_eq!(composer.process(text("e")), [text("\u{302}")]);
+        // The dot below sorts before the circumflex, so the circumflex is retyped.
+        assert_eq!(
+            composer.process(text("j")),
+            [bksp.clone(), text("\u{323}\u{302}")]
+        );
+        assert_eq!(composer.composing(), "e\u{323}\u{302}");
+        // Backspace takes the whole letter: three code points.
+        assert_eq!(
+            composer.process(bksp.clone()),
+            [bksp.clone(), bksp.clone(), bksp.clone()]
+        );
+        assert_eq!(composer.composing(), "");
     }
 
     #[test]
@@ -547,6 +648,10 @@ mod tests {
         for style in ToneStyle::ALL {
             assert_eq!(ToneStyle::from_name(style.name()), Some(style));
         }
+        for form in UnicodeForm::ALL {
+            assert_eq!(UnicodeForm::from_name(form.name()), Some(form));
+        }
         assert_eq!(InputMethod::from_name("Telex"), None);
+        assert_eq!(UnicodeForm::from_name("NFD"), None);
     }
 }

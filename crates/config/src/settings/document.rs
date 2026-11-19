@@ -90,6 +90,11 @@ tone-style = "classic"
 # Only change syllables that can be Vietnamese, so most English words and code
 # type as written.
 check-spelling = true
+# How letters with marks are written in Unicode: "nfc" as one character each
+# (ệ), which is what almost every app expects; or "nfd" as the plain letter
+# followed by its marks as characters of their own (e, dot below, circumflex),
+# for the rare app that needs that.
+unicode-form = "nfc"
 
 # Changes to the theme: for every theme, then for dark or light themes only.
 # Values are CSS colours (#7aa2f7, rgb(...), oklch(...), colour names), lengths
@@ -209,6 +214,7 @@ impl SettingsDocument {
         edit_section(root, "vietnamese", |table| {
             let method = Scalar::Str(vi.method.name().into());
             let tone_style = Scalar::Str(vi.tone_style.name().into());
+            let unicode_form = Scalar::Str(vi.unicode_form.name().into());
             set(
                 table,
                 "enabled",
@@ -226,6 +232,12 @@ impl SettingsDocument {
                     "check-spelling",
                     Scalar::Bool(vi.check_spelling),
                     vi.check_spelling == default_vi.check_spelling,
+                )
+                | set(
+                    table,
+                    "unicode-form",
+                    unicode_form,
+                    vi.unicode_form == default_vi.unicode_form,
                 )
         });
 
@@ -575,6 +587,25 @@ accent = "#ff9e64"
         let text = saved(None, |s| s.vietnamese.enabled = true);
         assert!(text.contains("\nenabled = true\n"), "{text}");
         assert!(text.contains("# \"telex\": s f r x j"), "{text}");
+    }
+
+    #[test]
+    fn saves_the_unicode_form() {
+        use super_keyboard_core::UnicodeForm;
+        let text = saved(Some("theme = \"dark\"\n"), |s| {
+            s.vietnamese.unicode_form = UnicodeForm::Nfd;
+        });
+        assert!(
+            text.contains("[vietnamese]\nunicode-form = \"nfd\"\n"),
+            "{text}"
+        );
+
+        let text = saved(None, |s| s.vietnamese.unicode_form = UnicodeForm::Nfd);
+        assert!(text.contains("\nunicode-form = \"nfd\"\n"), "{text}");
+        assert!(
+            text.contains("# How letters with marks are written"),
+            "{text}"
+        );
     }
 
     #[test]

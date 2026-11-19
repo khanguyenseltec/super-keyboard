@@ -105,7 +105,9 @@ and the sink. It keeps the syllable being typed as letters plus one tone, applie
 VNI keys to it, places the tone from the whole syllable, and sends the difference from what
 is on screen as Backspaces and text (`hoa` + `f` sends ⌫ ⌫ `òa`). Anything that is not a
 letter ends the syllable and passes through. Because it only ever sends `Text` and
-Backspace, it needs nothing from a platform sink.
+Backspace, it needs nothing from a platform sink. The syllable is written precomposed
+(NFC) or, with `unicode-form = "nfd"`, as letters followed by combining marks; the
+difference is counted in code points, one Backspace each.
 
 The physical keyboard takes another route to the same rules. `super-keyboard-ibus` is
 an IBus engine: IBus hands it every key in every application, and it uses the composer's

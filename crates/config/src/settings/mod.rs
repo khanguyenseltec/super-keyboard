@@ -27,6 +27,7 @@
 //! method = "telex"      # "telex" or "vni"
 //! tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
 //! check-spelling = true # only change syllables that can be Vietnamese
+//! unicode-form = "nfc"  # "nfc" (ệ is one character) or "nfd" (e and its marks)
 //!
 //! [style.dark]
 //! accent = "#ff9e64"
@@ -347,7 +348,7 @@ impl Default for PreviewSettings {
 mod tests {
     use super::*;
     use crate::style::{StyleValue, StyleVar, ValueKind};
-    use super_keyboard_core::{InputMethod, ToneStyle};
+    use super_keyboard_core::{InputMethod, ToneStyle, UnicodeForm};
 
     #[test]
     fn empty_file_is_the_defaults() {
@@ -387,6 +388,7 @@ mod tests {
             method = "vni"
             tone-style = "modern"
             check-spelling = false
+            unicode-form = "nfd"
             [style]
             radius = "10px"
             [style.dark]
@@ -433,6 +435,7 @@ mod tests {
                 method: InputMethod::Vni,
                 tone_style: ToneStyle::Modern,
                 check_spelling: false,
+                unicode_form: UnicodeForm::Nfd,
             }
         );
         let value = |kind, v: &str| StyleValue::parse(kind, v).unwrap();
