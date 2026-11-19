@@ -82,6 +82,12 @@ align = "center"      # "center", "left" or "right"
 [preview]
 show-log = true       # show recent output beside the preview text
 
+[vietnamese]          # see Vietnamese typing below
+enabled = false       # the VI / EN button in the top bar switches this
+method = "telex"      # "telex" or "vni"
+tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
+check-spelling = true # only change syllables that can be Vietnamese
+
 [style]               # changes to every theme
 radius = "8px"
 key-font-family = "Fira Code, monospace"
@@ -326,6 +332,74 @@ shown = { compact = false, coding-numbers = false }   # hidden from the menu
 
 The menu starts with the presets, then your profiles, then layouts that have no profile.
 A hidden profile still works if `profile` names it; the menu shows it while it is in use.
+
+## Vietnamese typing
+
+Super Keyboard types Vietnamese with **Telex** or **VNI**, the two standard ways of
+adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
+or open **settings → Tiếng Việt** for the method, tone placement, spelling check and a
+box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
+match what the keys do.
+
+| | Telex | VNI | Result |
+|---|---|---|---|
+| Tones | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | sắc á, huyền à, hỏi ả, ngã ã, nặng ạ |
+| Remove the tone | `z` | `0` | a |
+| Circumflex | `aa` `ee` `oo` | `a6` `e6` `o6` | â ê ô |
+| Breve | `aw` | `a8` | ă |
+| Horn | `ow` `uw` (or a lone `w`) | `o7` `u7` | ơ ư |
+| Stroke | `dd` | `d9` | đ |
+| Example | `Tieesng Vieejt` | `Tie61ng Vie65t` | Tiếng Việt |
+
+- **Marks go anywhere in the syllable.** `tieengs`, `tiengse` and `tiengs` + `e` all type
+  `tiếng`; `nguoiwf` and `nguwowif` both type `người`.
+- **The tone moves with the syllable.** `hoaf` is `hòa`, and adding `n` makes `hoàn`.
+  Backspace removes the last letter and puts the tone back where it belongs.
+- **Twice takes it off.** Typing a mark's key again removes the mark and types the key:
+  `ass` is `as`, `ww` is `w`, `a11` is `a1`. The rest of that word types as written.
+- **Tone placement** (`tone-style`) only changes `oa`, `oe` and `uy` at the end of a
+  syllable: classic `hòa khỏe thủy`, modern `hoà khoẻ thuỷ`.
+- **Spelling check** (`check-spelling`) only changes syllables that can be Vietnamese,
+  so `for`, `class`, `print` and most code type as written. Words such as `test`
+  (`tét`) still look Vietnamese: switch to **EN** for English.
+- A syllable ends at anything that is not a letter (or, with VNI, a digit): space,
+  punctuation, Enter, an arrow key or a `Ctrl` chord. Chords are never changed.
+
+### With the physical keyboard, in every app (Ubuntu)
+
+The **Vietnamese (Super Keyboard)** input method types Telex or VNI with your physical
+keyboard in every application: terminals, browsers, editors, office apps. It is an IBus
+engine (`apps/super-keyboard-ibus`) that uses the same rules and **the same
+`[vietnamese]` settings** as the on-screen keyboard:
+
+- Switch **VI / EN**, **Telex / VNI**, the tone style or the spelling check in the app,
+  and the input method follows within a second; switch them from the **VI / EN menu
+  in the desktop's top bar**, and the app follows. Both sides read and write
+  `settings.toml`.
+- The syllable being typed is shown underlined in the application and committed at a
+  space, punctuation, Enter, an arrow or a shortcut (`Ctrl+S` saves the finished word).
+  Backspace edits the syllable while it is underlined.
+- **Super+Space** switches between it and your other input sources.
+
+Install it with the `.deb` (it ships the engine), or from the source:
+
+```sh
+apps/super-keyboard-ibus/install.sh              # builds, installs (sudo), adds the input source
+apps/super-keyboard-ibus/install.sh --uninstall
+```
+
+The installer puts the engine in `/usr/libexec/super-keyboard-ibus` and its component
+file in `/usr/share/ibus/component/`, restarts IBus and adds the input source to GNOME.
+After installing the `.deb`, run `ibus restart` (or log out and in), then add
+**Vietnamese (Super Keyboard)** in **Settings → Keyboard → Input Sources**.
+
+To try it without installing, run `target/release/super-keyboard-ibus --register` and
+then `ibus engine super-keyboard`; `ibus engine xkb:us::eng` switches back.
+
+The on-screen keys still type into the app's preview; typing into other apps with them
+comes with the Android (v0.2) and Ubuntu desktop (v0.3) keyboards. The on-screen
+keyboard rewrites text with Backspace and new text, the way Unikey does, so it will work
+with every output backend.
 
 ## Layouts
 

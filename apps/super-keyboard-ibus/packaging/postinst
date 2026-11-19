@@ -1,0 +1,8 @@
+#!/bin/sh
+# Tell IBus about the Vietnamese engine. Running desktop sessions pick it up
+# after `ibus restart` or the next login.
+set -e
+if command -v ibus >/dev/null 2>&1; then
+    ibus write-cache --system >/dev/null 2>&1 || true
+fi
+exit 0

@@ -2,15 +2,15 @@
 //!
 //! The engine decides everything; this module only feeds it events with
 //! timestamps, runs a timer while a hold or repeat is pending, and passes the
-//! output to the sink.
+//! output through the Vietnamese composer to the sink.
 
 use dioxus::{
     core::{Task, spawn_forever},
     prelude::*,
 };
 use super_keyboard_core::{
-    GestureConfig, Gestures, KeyId, Keyboard, Keymap, OutputSink, PointerId, PressKind,
-    PreviewSink, Trigger,
+    Composer, GestureConfig, Gestures, KeyId, Keyboard, Keymap, OutputSink, PointerId, PressKind,
+    PreviewSink, Trigger, VietnameseOptions,
 };
 
 use crate::time;
@@ -21,6 +21,8 @@ use crate::time;
 pub struct KeyboardController {
     pub keyboard: Signal<Keyboard>,
     pub sink: Signal<PreviewSink>,
+    /// Telex or VNI typing, between the keyboard and the sink.
+    pub vietnamese: Signal<Composer>,
     /// Keys under a finger, for drawing them pressed.
     pressed: Signal<Vec<KeyId>>,
     /// Not reactive: pointer moves must not re-render the keyboard.
@@ -30,10 +32,11 @@ pub struct KeyboardController {
 
 impl KeyboardController {
     /// Creates the controller's state in the current scope. Call it from a hook.
-    pub fn new(keymap: Keymap, config: GestureConfig) -> Self {
+    pub fn new(keymap: Keymap, config: GestureConfig, vietnamese: VietnameseOptions) -> Self {
         Self {
             keyboard: Signal::new(Keyboard::new(keymap)),
             sink: Signal::new(PreviewSink::default()),
+            vietnamese: Signal::new(Composer::new(vietnamese)),
             pressed: Signal::new(Vec::new()),
             gestures: CopyValue::new(Gestures::new(config)),
             timer: CopyValue::new(None),
@@ -117,8 +120,15 @@ impl KeyboardController {
         }
     }
 
+    pub fn set_vietnamese(&mut self, options: VietnameseOptions) {
+        if self.vietnamese.peek().options() != options {
+            self.vietnamese.write().set_options(options);
+        }
+    }
+
     pub fn clear_preview(&mut self) {
         self.sink.write().clear();
+        self.vietnamese.write().reset();
     }
 
     fn dispatch(&mut self, triggers: Vec<Trigger>) {
@@ -133,9 +143,12 @@ impl KeyboardController {
                 .collect()
         };
         if !outputs.is_empty() {
+            let mut composer = self.vietnamese.write();
             let mut sink = self.sink.write();
             for output in outputs {
-                sink.emit(output);
+                for output in composer.process(output) {
+                    sink.emit(output);
+                }
             }
         }
     }
@@ -187,7 +200,11 @@ mod tests {
     fn with_controller(test: impl FnOnce(KeyboardController)) {
         fn root() -> Element {
             use_context_provider(|| {
-                KeyboardController::new(Keymap::builtin(), GestureConfig::default())
+                KeyboardController::new(
+                    Keymap::builtin(),
+                    GestureConfig::default(),
+                    VietnameseOptions::default(),
+                )
             });
             rsx! {}
         }
@@ -258,6 +275,25 @@ mod tests {
             let sink = controller.sink.peek();
             assert_eq!(sink.text(), "abc", "a swipe types no space");
             assert_eq!(sink.buffer().view().selected, "bc");
+        });
+    }
+
+    #[test]
+    fn telex_turns_taps_into_vietnamese() {
+        with_controller(|mut controller| {
+            controller.set_vietnamese(VietnameseOptions {
+                enabled: true,
+                ..VietnameseOptions::default()
+            });
+            for c in ["v", "i", "e", "e", "t", "j"] {
+                tap(&mut controller, &Action::Text(c.into()));
+            }
+            assert_eq!(text(&controller), "việt");
+            assert_eq!(controller.vietnamese.peek().composing(), "việt");
+            tap(&mut controller, &Action::Key(NamedKey::Backspace));
+            assert_eq!(text(&controller), "việ");
+            controller.clear_preview();
+            assert_eq!(controller.vietnamese.peek().composing(), "");
         });
     }
 

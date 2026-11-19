@@ -10,6 +10,8 @@
 //!   modifiers) that turns gesture [`Trigger`]s into [`Output`].
 //! - [`output`]: [`Output`] values, the [`OutputSink`] trait that platform
 //!   backends implement, and the in-app [`PreviewSink`].
+//! - [`vietnamese`]: Telex and VNI typing, as a [`Composer`] that rewrites
+//!   output on its way to the sink.
 //!
 //! A front end wires them together:
 //!
@@ -45,6 +47,7 @@ pub mod engine;
 pub mod gesture;
 pub mod layout;
 pub mod output;
+pub mod vietnamese;
 
 pub use action::{Action, Modifier, Modifiers, NamedKey, ParseActionError};
 pub use engine::{Keyboard, Latch};
@@ -54,3 +57,4 @@ pub use layout::{
     Section, Swipe,
 };
 pub use output::{BufferView, KeyCode, Motion, Output, OutputSink, PreviewSink, TextBuffer};
+pub use vietnamese::{Composer, InputMethod, ToneStyle, VietnameseOptions};

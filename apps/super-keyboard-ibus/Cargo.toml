@@ -1,0 +1,23 @@
+[package]
+name = "super-keyboard-ibus"
+description = "Vietnamese typing (Telex and VNI) with the physical keyboard in every app, as an IBus engine that shares its settings with Super Keyboard."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+super-keyboard-core.workspace = true
+super-keyboard-config.workspace = true
+# IBus speaks D-Bus on its own private bus.
+zbus = { version = "5.19", default-features = false, features = ["tokio"] }
+tokio = { version = "1", features = ["rt", "macros", "time", "sync"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

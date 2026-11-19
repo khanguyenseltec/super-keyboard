@@ -35,6 +35,7 @@ PreviewSink  Android sink          Linux uinput sink          Linux portal sink 
 | `crates/core/layouts/` | Built-in layouts. `dev.toml` is the default. |
 | `crates/config` | `super-keyboard-config`: the config directory, `settings.toml` (parse, validate, save with comments kept), themes and style overrides, the layout and theme libraries, and reload with last-good fallback. No UI dependency. |
 | `crates/config/themes/` | Built-in themes as JSON, and `theme.schema.json` for editors. |
+| `apps/super-keyboard-ibus` | `super-keyboard-ibus`: the Vietnamese input method for IBus. Physical-keyboard typing in every app, with the core's Telex and VNI rules and the app's `[vietnamese]` settings. Talks to IBus over D-Bus with `zbus`; `tests/e2e.sh` checks it through a private `ibus-daemon`. |
 | `apps/super-keyboard` | The Dioxus app. Cargo features `desktop` (default), `mobile` (Android) and `web` (browser preview for layout work). |
 | `docs/` | This document, the [roadmap](ROADMAP.md) and the [customizing guide](CUSTOMIZING.md). |
 | *planned* `crates/sink-linux` | uinput, portal and XTest output for Ubuntu. |
@@ -98,6 +99,20 @@ behind `prefers-color-scheme`, when following the system), and `main.css` only r
 variables. The keyboard's size is a share of the window set the same way: attributes
 on `.app` switch the keyboard to a flex share of the window, and labels size
 themselves with container query units.
+
+**Vietnamese typing rewrites output.** `vietnamese::Composer` sits between `Keyboard`
+and the sink. It keeps the syllable being typed as letters plus one tone, applies Telex or
+VNI keys to it, places the tone from the whole syllable, and sends the difference from what
+is on screen as Backspaces and text (`hoa` + `f` sends ⌫ ⌫ `òa`). Anything that is not a
+letter ends the syllable and passes through. Because it only ever sends `Text` and
+Backspace, it needs nothing from a platform sink.
+
+The physical keyboard takes another route to the same rules. `super-keyboard-ibus` is
+an IBus engine: IBus hands it every key in every application, and it uses the composer's
+key-level API (`push_key`, `backspace`, `take`) to show the syllable as pre-edit text
+and commit it when it ends. It shares `[vietnamese]` with the app through
+`settings.toml`, reading it every second and writing it from the desktop's input menu,
+so the on-screen and physical keyboards always type the same way.
 
 **Sinks are the platform boundary.** `OutputSink::emit(Output)` is the only interface a
 platform backend implements. `PreviewSink` (an in-app text buffer and event log) is the

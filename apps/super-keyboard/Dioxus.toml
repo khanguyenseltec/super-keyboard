@@ -10,3 +10,15 @@ long_description = """
 Super Keyboard puts brackets, operators, Esc, Tab, Ctrl, arrows and F-keys where
 programmers need them, with layouts defined as code.
 """
+
+# The .deb also installs the Vietnamese input method for IBus, so the physical
+# keyboard types Telex or VNI in every application, in sync with the app.
+# Build it first: cargo build --release -p super-keyboard-ibus
+[bundle.deb]
+recommends = ["ibus"]
+post_install_script = "../super-keyboard-ibus/packaging/postinst"
+post_remove_script = "../super-keyboard-ibus/packaging/postrm"
+
+[bundle.deb.files]
+"/usr/libexec/super-keyboard-ibus" = "../../target/release/super-keyboard-ibus"
+"/usr/share/ibus/component/super-keyboard.xml" = "../super-keyboard-ibus/data/super-keyboard.xml"
