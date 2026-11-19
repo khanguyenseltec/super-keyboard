@@ -365,6 +365,33 @@ match what the keys do.
 - A syllable ends at anything that is not a letter (or, with VNI, a digit): space,
   punctuation, Enter, an arrow key or a `Ctrl` chord. Chords are never changed.
 
+### Vietnamese letters on the keyboard
+
+To type Vietnamese without Telex or VNI, switch on the **Vietnamese letters** section
+(`vietnamese`) on the **Sections tab**, or in a profile:
+
+```toml
+[[profiles]]
+name = "viet"
+title = "Tiếng Việt"
+layout = "dev"
+sections = { vietnamese = true }
+```
+
+It adds a row with `ă â đ ê ô ơ ư` right above the letters, off by default. Shift types
+the capitals. Long-press the first five keys for the tones, in VNI's order:
+
+| Long-press | `ă` | `â` | `đ` | `ê` | `ô` |
+|---|---|---|---|---|---|
+| Tone | sắc ◌́ | huyền ◌̀ | hỏi ◌̉ | ngã ◌̃ | nặng ◌̣ |
+
+A tone goes on the letter before the cursor: `a` then long-press `ă` is `á`, and `V` `i`
+`ê` long-press `ô` `t` is `Việt`. The tones are Unicode combining marks, so `á` typed
+this way is stored as `a` followed by the mark (decomposed) rather than as one character.
+It looks the same, but a few applications treat the two differently; Telex and VNI
+always write single characters. The row is for the plain keys: with **VI** on, a letter
+from it ends the syllable being typed.
+
 ### With the physical keyboard, in every app (Ubuntu)
 
 The **Vietnamese (Super Keyboard)** input method types Telex or VNI with your physical
