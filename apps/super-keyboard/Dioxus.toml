@@ -3,6 +3,18 @@ name = "Super Keyboard"
 
 [bundle]
 identifier = "io.github.tristanseltec.superkeyboard"
+# Rendered from docs/brand by docs/brand/build.py; installed into the hicolor theme.
+icon = [
+    "assets/icons/16x16.png",
+    "assets/icons/24x24.png",
+    "assets/icons/32x32.png",
+    "assets/icons/48x48.png",
+    "assets/icons/64x64.png",
+    "assets/icons/128x128.png",
+    "assets/icons/256x256.png",
+    "assets/icons/512x512.png",
+    "assets/icons/super-keyboard.svg",
+]
 publisher = "Super Keyboard contributors"
 category = "Utility"
 short_description = "A developer-focused virtual keyboard."
