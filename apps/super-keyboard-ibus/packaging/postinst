@@ -1,7 +1,19 @@
 #!/bin/sh
+# Runs as root after the .deb is unpacked.
+set -e
+
+# dx 0.7 packs files with the builder's uid and group-write permission. Give
+# this package's files to root and drop group/other write, touching only paths
+# the package installed that are not root's already.
+dpkg-query -L super-keyboard 2>/dev/null | while IFS= read -r path; do
+    if [ -e "$path" ] && [ ! -L "$path" ] && [ "$(stat -c %u "$path")" != 0 ]; then
+        chown root:root "$path"
+        chmod go-w "$path"
+    fi
+done
+
 # Tell IBus about the Vietnamese engine. Running desktop sessions pick it up
 # after `ibus restart` or the next login.
-set -e
 if command -v ibus >/dev/null 2>&1; then
     ibus write-cache --system >/dev/null 2>&1 || true
 fi
