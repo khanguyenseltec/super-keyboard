@@ -5,9 +5,9 @@ use std::time::Duration;
 
 use proptest::prelude::*;
 use super_keyboard_core::{
-    Action, Arrangement, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch, Layout,
-    Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink, TextBuffer,
-    ToneStyle, Trigger, VietnameseOptions,
+    Action, Arrangement, AutoPair, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch,
+    Layout, Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink,
+    TextBuffer, ToneStyle, Trigger, VietnameseOptions,
 };
 
 /// Every key id of the built-in layout.
@@ -405,6 +405,30 @@ fn modifier_and_layer_keys_produce_no_output() {
         if is_modifier_or_layer(&tap) {
             assert_eq!(kb.tap(id), None, "{tap:?}");
         }
+    }
+}
+
+proptest! {
+    /// With auto-pairing on, the text before the cursor is exactly what was
+    /// typed, and all that is ever added after the cursor is closers.
+    #[test]
+    fn auto_pair_keeps_what_was_typed_before_the_cursor(
+        keys in "[a-c0-9 ,;()\\[\\]{}\"'`]{0,40}",
+    ) {
+        let mut pairs = AutoPair::new(true);
+        let mut sink = PreviewSink::default();
+        for key in keys.chars() {
+            let output = match key {
+                ' ' => Output::named(NamedKey::Space, Modifiers::NONE),
+                key => Output::Text(key.into()),
+            };
+            for output in pairs.process(output) {
+                sink.emit(output);
+            }
+        }
+        let view = sink.buffer().view();
+        prop_assert_eq!(view.before, keys.as_str());
+        prop_assert!(view.after.chars().all(|c| ")]}\"'`".contains(c)), "{:?}", view.after);
     }
 }
 

@@ -58,6 +58,10 @@ repeat-rate = 30
 swipe-step = 12
 # Key height: "auto" sizes keys to the screen, or a number of pixels (32-96).
 height = "auto"
+# Type the closing bracket or quote with the opening one: ( types () and puts
+# the cursor between them, and likewise for [ { " ' `. Leave it off for
+# editors that pair brackets themselves, or they will be doubled.
+auto-pair = false
 
 [keyboard]
 # Width: "auto" is the full window, at most 1100 pixels on wide screens; or a
@@ -184,7 +188,14 @@ impl SettingsDocument {
             let height = keys
                 .height_px
                 .map_or(Scalar::Str("auto".into()), |px| Scalar::Int(px.into()));
-            added | set(table, "height", height, keys.height_px.is_none())
+            added
+                | set(table, "height", height, keys.height_px.is_none())
+                | set(
+                    table,
+                    "auto-pair",
+                    Scalar::Bool(keys.auto_pair),
+                    keys.auto_pair == default_keys.auto_pair,
+                )
         });
 
         let keyboard = &settings.keyboard;
@@ -575,6 +586,22 @@ accent = "#ff9e64"
         let text = saved(None, |s| s.vietnamese.enabled = true);
         assert!(text.contains("\nenabled = true\n"), "{text}");
         assert!(text.contains("# \"telex\": s f r x j"), "{text}");
+    }
+
+    #[test]
+    fn saves_auto_pair() {
+        let text = saved(Some("theme = \"dark\"\n"), |s| s.keys.auto_pair = true);
+        assert!(text.contains("[keys]\nauto-pair = true\n"), "{text}");
+
+        let text = saved(Some(&text), |s| s.keys.auto_pair = false);
+        assert!(text.contains("auto-pair = false"), "{text}");
+
+        let text = saved(None, |s| s.keys.auto_pair = true);
+        assert!(text.contains("\nauto-pair = true\n"), "{text}");
+        assert!(
+            text.contains("# Type the closing bracket or quote"),
+            "{text}"
+        );
     }
 
     #[test]

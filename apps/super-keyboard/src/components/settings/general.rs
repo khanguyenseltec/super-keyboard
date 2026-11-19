@@ -127,6 +127,17 @@ pub fn GeneralSettings() -> Element {
                     value: keys.swipe_step_px,
                     onchange: move |px| state.update_settings(|s| s.keys.swipe_step_px = px),
                 }
+                ToggleField {
+                    label: "Auto-pair brackets and quotes",
+                    checked: keys.auto_pair,
+                    onchange: move |on: bool| state.update_settings(|s| s.keys.auto_pair = on),
+                }
+            }
+            p { class: "hint",
+                "Typing " code { "(" } " types " code { "()" }
+                " with the cursor between them, and likewise for "
+                code { "[ {{ \" ' `" }
+                ". Leave it off for editors that pair brackets themselves."
             }
             h3 { class: "group-title", "Keyboard size" }
             div { class: "fields",

@@ -7,7 +7,8 @@
 //! - [`gesture`]: when a key fires: tap, long-press hold, repeat and swipe, as a
 //!   clock-free state machine.
 //! - [`engine`]: the [`Keyboard`] state machine (current layer, one-shot and locked
-//!   modifiers) that turns gesture [`Trigger`]s into [`Output`].
+//!   modifiers) that turns gesture [`Trigger`]s into [`Output`], and [`AutoPair`],
+//!   which types the closer of a bracket or quote.
 //! - [`output`]: [`Output`] values, the [`OutputSink`] trait that platform
 //!   backends implement, and the in-app [`PreviewSink`].
 //! - [`vietnamese`]: Telex and VNI typing, as a [`Composer`] that rewrites
@@ -50,7 +51,7 @@ pub mod output;
 pub mod vietnamese;
 
 pub use action::{Action, Modifier, Modifiers, NamedKey, ParseActionError};
-pub use engine::{Keyboard, Latch};
+pub use engine::{AutoPair, Keyboard, Latch};
 pub use gesture::{Direction, GestureConfig, Gestures, PointerId, PressKind, Trigger};
 pub use layout::{
     Arrangement, Block, Key, KeyId, KeyProblem, Keymap, Layer, LayerDef, Layout, LayoutError,

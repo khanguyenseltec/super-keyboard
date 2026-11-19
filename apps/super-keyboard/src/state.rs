@@ -60,11 +60,12 @@ impl AppState {
     /// Loads the configuration and creates the state in the current scope.
     pub fn load(env: &AppEnv) -> Self {
         let config = UserConfig::load(env.config_dir.clone());
-        let keyboard = KeyboardController::new(
+        let mut keyboard = KeyboardController::new(
             config.keymap(),
             config.settings.keys.gesture_config(),
             config.settings.vietnamese,
         );
+        keyboard.set_auto_pair(config.settings.keys.auto_pair);
         Self {
             config: Signal::new(config),
             keyboard,
@@ -265,16 +266,18 @@ impl AppState {
 
     /// Brings the keyboard in line with the configuration.
     fn sync_keyboard(&mut self) {
-        let (keymap, gestures, vietnamese) = {
+        let (keymap, gestures, auto_pair, vietnamese) = {
             let config = self.config.peek();
             (
                 config.keymap(),
                 config.settings.keys.gesture_config(),
+                config.settings.keys.auto_pair,
                 config.settings.vietnamese,
             )
         };
         self.keyboard.set_keymap(keymap);
         self.keyboard.set_gesture_config(gestures);
+        self.keyboard.set_auto_pair(auto_pair);
         self.keyboard.set_vietnamese(vietnamese);
     }
 }
@@ -406,6 +409,15 @@ mod tests {
                 "the fixed theme keeps its slot"
             );
             assert_eq!(theme.dark, "nord");
+        });
+    }
+
+    #[test]
+    fn the_auto_pair_setting_reaches_the_keyboard() {
+        with_state(AppEnv::isolated(), |mut state| {
+            assert!(!state.keyboard.auto_pair());
+            state.update_settings(|s| s.keys.auto_pair = true);
+            assert!(state.keyboard.auto_pair());
         });
     }
 

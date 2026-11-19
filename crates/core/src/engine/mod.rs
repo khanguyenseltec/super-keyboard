@@ -2,11 +2,14 @@
 //!
 //! [`Keyboard`] knows *what* a key does. *When* it fires (tap, long-press,
 //! repeat, swipe) is decided by [`crate::gesture`], which hands it [`Trigger`]s.
+//! [`AutoPair`] then turns an opening bracket or quote into the pair.
 
 mod chord;
 mod latch;
+mod pair;
 
 pub use latch::Latch;
+pub use pair::AutoPair;
 
 use std::borrow::Cow;
 

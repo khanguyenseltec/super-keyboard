@@ -170,6 +170,18 @@ mod tests {
     }
 
     #[test]
+    fn the_general_tab_offers_auto_pair() {
+        let html = render(|| {
+            use_context_provider(|| AppState::load(&AppEnv::isolated()));
+            rsx! { GeneralSettings {} }
+        });
+        assert!(
+            html.contains(r#"<label for="auto-pair-brackets-and-quotes">Auto-pair brackets and quotes</label>"#),
+            "{html}"
+        );
+    }
+
+    #[test]
     fn the_vietnamese_tab_shows_both_methods_and_their_rules() {
         let html = render(|| {
             use_context_provider(|| AppState::load(&AppEnv::isolated()));
