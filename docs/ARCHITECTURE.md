@@ -35,7 +35,7 @@ PreviewSink  Android sink          Linux uinput sink          Linux portal sink 
 | `crates/core/layouts/` | Built-in layouts. `dev.toml` is the default. |
 | `crates/config` | `super-keyboard-config`: the config directory, `settings.toml` (parse, validate, save with comments kept), themes and style overrides, the layout and theme libraries, and reload with last-good fallback. No UI dependency. |
 | `crates/config/themes/` | Built-in themes as JSON, and `theme.schema.json` for editors. |
-| `apps/super-keyboard-ibus` | `super-keyboard-ibus`: the Vietnamese input method for IBus. Physical-keyboard typing in every app, with the core's Telex and VNI rules and the app's `[vietnamese]` settings. Talks to IBus over D-Bus with `zbus`; `tests/e2e.sh` checks it through a private `ibus-daemon`. |
+| `apps/super-keyboard-ibus` | `super-keyboard-ibus`: the Vietnamese input method for IBus. Physical-keyboard typing in every app, with the core's Telex, VNI and VIQR rules and the app's `[vietnamese]` settings. Talks to IBus over D-Bus with `zbus`; `tests/e2e.sh` checks it through a private `ibus-daemon`. |
 | `apps/super-keyboard` | The Dioxus app. Cargo features `desktop` (default), `mobile` (Android) and `web` (browser preview for layout work). |
 | `docs/` | This document, the [roadmap](ROADMAP.md) and the [customizing guide](CUSTOMIZING.md). |
 | *planned* `crates/sink-linux` | uinput, portal and XTest output for Ubuntu. |
@@ -101,8 +101,8 @@ on `.app` switch the keyboard to a flex share of the window, and labels size
 themselves with container query units.
 
 **Vietnamese typing rewrites output.** `vietnamese::Composer` sits between `Keyboard`
-and the sink. It keeps the syllable being typed as letters plus one tone, applies Telex or
-VNI keys to it, places the tone from the whole syllable, and sends the difference from what
+and the sink. It keeps the syllable being typed as letters plus one tone, applies Telex,
+VNI or VIQR keys to it, places the tone from the whole syllable, and sends the difference from what
 is on screen as Backspaces and text (`hoa` + `f` sends ⌫ ⌫ `òa`). Anything that is not a
 letter ends the syllable and passes through. Because it only ever sends `Text` and
 Backspace, it needs nothing from a platform sink.

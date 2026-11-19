@@ -39,36 +39,45 @@ const VOWEL_GROUPS: [&str; 56] = [
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Effect {
     Tone(Tone),
-    /// Remove the tone (Telex `z`, VNI `0`).
+    /// Remove the tone (Telex `z`, VNI and VIQR `0`).
     ClearTone,
     /// â, ê, ô: on the given base vowel (Telex `aa`), or on any of a, e, o
-    /// (VNI `6`).
+    /// (VNI `6`, VIQR `^`).
     Circumflex(Option<char>),
-    /// ă (VNI `8`).
+    /// ă (VNI `8`, VIQR `(`).
     Breve,
-    /// ơ, ư (VNI `7`).
+    /// ơ, ư (VNI `7`, VIQR `+`).
     Horn,
-    /// Telex `w`: ơ, ư or ă, and `ư` on its own.
-    W,
+    /// Telex `w`: ơ, ư or ă, and, if `lone`, `ư` on its own.
+    W {
+        lone: bool,
+    },
+    /// Telex `[` and `]`: the letter ơ or ư, given by its base vowel.
+    Horned(char),
     /// đ.
     Stroke,
 }
 
 impl Effect {
-    fn of(method: InputMethod, key: char) -> Option<Self> {
-        let effect = match (method, key.to_ascii_lowercase()) {
-            (InputMethod::Telex, 's') | (InputMethod::Vni, '1') => Self::Tone(Tone::Acute),
-            (InputMethod::Telex, 'f') | (InputMethod::Vni, '2') => Self::Tone(Tone::Grave),
-            (InputMethod::Telex, 'r') | (InputMethod::Vni, '3') => Self::Tone(Tone::Hook),
-            (InputMethod::Telex, 'x') | (InputMethod::Vni, '4') => Self::Tone(Tone::Tilde),
-            (InputMethod::Telex, 'j') | (InputMethod::Vni, '5') => Self::Tone(Tone::Dot),
-            (InputMethod::Telex, 'z') | (InputMethod::Vni, '0') => Self::ClearTone,
-            (InputMethod::Telex, c @ ('a' | 'e' | 'o')) => Self::Circumflex(Some(c)),
-            (InputMethod::Vni, '6') => Self::Circumflex(None),
-            (InputMethod::Vni, '7') => Self::Horn,
-            (InputMethod::Vni, '8') => Self::Breve,
-            (InputMethod::Telex, 'w') => Self::W,
-            (InputMethod::Telex, 'd') | (InputMethod::Vni, '9') => Self::Stroke,
+    fn of(options: &VietnameseOptions, key: char) -> Option<Self> {
+        use InputMethod::{Telex, Viqr, Vni};
+        let effect = match (options.method, key.to_ascii_lowercase()) {
+            (Telex, 's') | (Vni, '1') | (Viqr, '\'') => Self::Tone(Tone::Acute),
+            (Telex, 'f') | (Vni, '2') | (Viqr, '`') => Self::Tone(Tone::Grave),
+            (Telex, 'r') | (Vni, '3') | (Viqr, '?') => Self::Tone(Tone::Hook),
+            (Telex, 'x') | (Vni, '4') | (Viqr, '~') => Self::Tone(Tone::Tilde),
+            (Telex, 'j') | (Vni, '5') | (Viqr, '.') => Self::Tone(Tone::Dot),
+            (Telex, 'z') | (Vni | Viqr, '0') => Self::ClearTone,
+            (Telex, c @ ('a' | 'e' | 'o')) => Self::Circumflex(Some(c)),
+            (Vni, '6') | (Viqr, '^') => Self::Circumflex(None),
+            (Vni, '7') | (Viqr, '+') => Self::Horn,
+            (Vni, '8') | (Viqr, '(') => Self::Breve,
+            (Telex, 'w') => Self::W {
+                lone: options.telex_w,
+            },
+            (Telex, '[') if options.telex_brackets => Self::Horned('o'),
+            (Telex, ']') if options.telex_brackets => Self::Horned('u'),
+            (Telex | Viqr, 'd') | (Vni, '9') => Self::Stroke,
             _ => return None,
         };
         Some(effect)
@@ -138,12 +147,13 @@ impl Word {
         }
     }
 
-    /// Adds a typed key: a mark, a tone or a letter. Returns false for a VNI
-    /// digit that has nothing to change, which is then typed as a plain digit
-    /// outside the syllable.
+    /// Adds a typed key: a mark, a tone or a letter. Returns false for a key
+    /// that is not a letter and has nothing to change (a VNI digit, VIQR
+    /// punctuation, a Telex bracket), which is then typed as itself outside
+    /// the syllable.
     pub fn push_key(&mut self, key: char, options: &VietnameseOptions) -> bool {
         if !self.frozen
-            && let Some(effect) = Effect::of(options.method, key)
+            && let Some(effect) = Effect::of(options, key)
         {
             let before = self.clone();
             match self.apply(effect, key) {
@@ -205,18 +215,33 @@ impl Word {
                 };
                 self.toggle_mark(vowels, Mark::Breve, |l| l.base == 'a')
             }
-            Effect::Horn | Effect::W => match vowels {
-                Some(vowels) => self.horn(vowels, effect == Effect::W),
-                None if effect == Effect::W => {
+            Effect::Horn | Effect::W { .. } => match vowels {
+                Some(vowels) => self.horn(vowels, matches!(effect, Effect::W { .. })),
+                None if effect == (Effect::W { lone: true }) => {
                     // A lone Telex `w` is `ư`: `w` is "ư", `nhw` is "như".
                     self.letters.push(Letter {
                         mark: Mark::Horn,
-                        from_w: true,
+                        made_by: Some('w'),
                         ..Letter::typed(if key.is_uppercase() { 'U' } else { 'u' })
                     });
                     Outcome::Applied
                 }
                 None => Outcome::NotApplicable,
+            },
+            Effect::Horned(base) => match self.letters.last_mut() {
+                // `[[` is `[`: the letter the bracket made turns back into it.
+                Some(last) if last.made_by == Some(key) => {
+                    *last = Letter::typed(key);
+                    Outcome::Reverted
+                }
+                _ => {
+                    self.letters.push(Letter {
+                        mark: Mark::Horn,
+                        made_by: Some(key),
+                        ..Letter::typed(base)
+                    });
+                    Outcome::Applied
+                }
             },
             Effect::Stroke => match self.letters.first_mut() {
                 Some(first) if first.base == 'd' && first.mark == Mark::Stroke => {
@@ -257,7 +282,7 @@ impl Word {
     }
 
     /// The horn (and, for Telex `w`, the breve): `uo` is `ươ`, `ua` is `ưa`,
-    /// then `ă`, `ơ` or `ư`. A second `w` or `7` takes them off.
+    /// then `ă`, `ơ` or `ư`. A second `w`, `7` or `+` takes them off.
     fn horn(&mut self, vowels: Range<usize>, telex_w: bool) -> Outcome {
         let has_final = vowels.end < self.letters.len();
         let horned = |l: &Letter| {
@@ -277,7 +302,11 @@ impl Word {
         }
         if self.letters[vowels.clone()].iter().any(horned) {
             // `ww` is `w`: the `ư` a lone `w` made turns back into the `w`.
-            if let Some(made) = self.letters.iter_mut().find(|l| l.from_w) {
+            if let Some(made) = self
+                .letters
+                .iter_mut()
+                .find(|l| telex_w && l.made_by == Some('w'))
+            {
                 *made = Letter::typed(if made.upper { 'W' } else { 'w' });
                 return Outcome::Reverted;
             }

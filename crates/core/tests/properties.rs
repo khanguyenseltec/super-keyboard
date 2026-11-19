@@ -408,11 +408,14 @@ fn modifier_and_layer_keys_produce_no_output() {
     }
 }
 
-/// A key for the Vietnamese property: a letter, a digit, a space or Backspace.
+/// A key for the Vietnamese property: a letter, a digit, VIQR punctuation, a
+/// bracket, a space or Backspace.
 fn vietnamese_key() -> impl Strategy<Value = Output> {
     prop_oneof![
         8 => proptest::sample::select(
-            "aeiouyAEOdDswfrxjzWbcghknmptqv0123456789".chars().collect::<Vec<_>>()
+            "aeiouyAEOdDswfrxjzWbcghknmptqv0123456789'`?~.^(+[]"
+                .chars()
+                .collect::<Vec<_>>()
         )
         .prop_map(|c| Output::Text(c.into())),
         1 => Just(Output::named(NamedKey::Space, Modifiers::NONE)),
@@ -426,15 +429,19 @@ proptest! {
     #[test]
     fn vietnamese_only_rewrites_its_own_syllable(
         keys in prop::collection::vec(vietnamese_key(), 0..80),
-        vni in any::<bool>(),
+        method in proptest::sample::select(InputMethod::ALL.to_vec()),
         modern in any::<bool>(),
         check_spelling in any::<bool>(),
+        telex_w in any::<bool>(),
+        telex_brackets in any::<bool>(),
     ) {
         let mut composer = Composer::new(VietnameseOptions {
             enabled: true,
-            method: if vni { InputMethod::Vni } else { InputMethod::Telex },
+            method,
             tone_style: if modern { ToneStyle::Modern } else { ToneStyle::Classic },
             check_spelling,
+            telex_w,
+            telex_brackets,
         });
         let mut sink = PreviewSink::default();
         sink.emit(Output::Text("> ".into()));

@@ -1,4 +1,4 @@
-//! Vietnamese typing with Telex or VNI.
+//! Vietnamese typing with Telex, VNI or VIQR.
 //!
 //! A [`Composer`] sits between the [`Keyboard`](crate::Keyboard) and an
 //! [`OutputSink`](crate::OutputSink). It keeps the syllable being typed and,
@@ -7,14 +7,18 @@
 //! `V`, `i`, `e`, then ⌫ and `ê`. This works with any sink that can insert
 //! text and press Backspace, which is every sink.
 //!
-//! | Telex | VNI | Result |
-//! |---|---|---|
-//! | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | sắc á, huyền à, hỏi ả, ngã ã, nặng ạ |
-//! | `z` | `0` | remove the tone |
-//! | `aa` `ee` `oo` | `a6` `e6` `o6` | â ê ô |
-//! | `aw` | `a8` | ă |
-//! | `ow` `uw` (or `w`) | `o7` `u7` | ơ ư |
-//! | `dd` | `d9` | đ |
+//! | Telex | VNI | VIQR | Result |
+//! |---|---|---|---|
+//! | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | `'` `` ` `` `?` `~` `.` | sắc á, huyền à, hỏi ả, ngã ã, nặng ạ |
+//! | `z` | `0` | `0` | remove the tone |
+//! | `aa` `ee` `oo` | `a6` `e6` `o6` | `a^` `e^` `o^` | â ê ô |
+//! | `aw` | `a8` | `a(` | ă |
+//! | `ow` `uw` (or `w`) | `o7` `u7` | `o+` `u+` | ơ ư |
+//! | `dd` | `d9` | `dd` | đ |
+//!
+//! Telex has two options: [`VietnameseOptions::telex_w`] (a `w` with no vowel
+//! to mark is `ư`; on by default) and [`VietnameseOptions::telex_brackets`]
+//! (`[` and `]` type `ơ` and `ư`; off by default).
 //!
 //! Marks can be typed anywhere in the syllable (`tieengs` and `tiengse` are
 //! both `tiếng`), and the tone moves to the right vowel as the syllable grows.
@@ -39,16 +43,19 @@ pub enum InputMethod {
     Telex,
     /// Digits: `a6` is â, `1` is sắc.
     Vni,
+    /// Punctuation: `a^` is â, `'` is sắc.
+    Viqr,
 }
 
 impl InputMethod {
-    pub const ALL: [Self; 2] = [Self::Telex, Self::Vni];
+    pub const ALL: [Self; 3] = [Self::Telex, Self::Vni, Self::Viqr];
 
     /// The name used in `settings.toml`.
     pub fn name(self) -> &'static str {
         match self {
             Self::Telex => "telex",
             Self::Vni => "vni",
+            Self::Viqr => "viqr",
         }
     }
 
@@ -60,6 +67,7 @@ impl InputMethod {
         match self {
             Self::Telex => "Telex",
             Self::Vni => "VNI",
+            Self::Viqr => "VIQR",
         }
     }
 }
@@ -106,6 +114,11 @@ pub struct VietnameseOptions {
     pub tone_style: ToneStyle,
     /// Only change syllables that can be Vietnamese.
     pub check_spelling: bool,
+    /// Telex: a `w` with no vowel to mark types `ư` (`tw` is `tư`). Off, it
+    /// types `w`, and `ư` is `uw`.
+    pub telex_w: bool,
+    /// Telex: `[` types `ơ` and `]` types `ư`.
+    pub telex_brackets: bool,
 }
 
 impl Default for VietnameseOptions {
@@ -115,6 +128,8 @@ impl Default for VietnameseOptions {
             method: InputMethod::default(),
             tone_style: ToneStyle::default(),
             check_spelling: true,
+            telex_w: true,
+            telex_brackets: false,
         }
     }
 }
@@ -160,8 +175,8 @@ impl Composer {
 
     /// Adds a typed character to the syllable, as an input method that shows
     /// the syllable as pre-edit text does. Returns false when `key` is not part
-    /// of a syllable (a space, punctuation, a Telex digit, or a VNI digit with
-    /// nothing to mark): the caller then finishes the syllable with
+    /// of a syllable (a space, punctuation, a Telex digit, or a VNI digit or
+    /// VIQR mark with nothing to mark): the caller then finishes the syllable with
     /// [`take`](Self::take) and handles `key` itself. Works whether or not
     /// [`VietnameseOptions::enabled`] is set; checking it is the caller's job.
     pub fn push_key(&mut self, key: char) -> bool {
@@ -185,9 +200,10 @@ impl Composer {
         text
     }
 
-    /// What to send for `output`. Anything that is not a letter (or a VNI
-    /// digit) ends the syllable and passes through unchanged, and so does
-    /// everything while Vietnamese is off.
+    /// What to send for `output`. Anything that is not a letter (or a key the
+    /// method marks with: a VNI digit, VIQR punctuation, a Telex bracket) ends
+    /// the syllable and passes through unchanged, and so does everything while
+    /// Vietnamese is off.
     pub fn process(&mut self, output: Output) -> Vec<Output> {
         if !self.options.enabled {
             return vec![output];
@@ -218,10 +234,14 @@ impl Composer {
     }
 
     fn is_word_key(&self, key: char) -> bool {
-        match self.options.method {
-            InputMethod::Telex => key.is_ascii_alphabetic(),
-            InputMethod::Vni => key.is_ascii_alphanumeric(),
-        }
+        key.is_ascii_alphabetic()
+            || match self.options.method {
+                InputMethod::Telex => self.options.telex_brackets && matches!(key, '[' | ']'),
+                InputMethod::Vni => key.is_ascii_digit(),
+                InputMethod::Viqr => {
+                    matches!(key, '\'' | '`' | '?' | '~' | '.' | '^' | '(' | '+' | '0')
+                }
+            }
     }
 }
 
@@ -276,6 +296,13 @@ mod tests {
     fn vni() -> VietnameseOptions {
         VietnameseOptions {
             method: InputMethod::Vni,
+            ..VietnameseOptions::default()
+        }
+    }
+
+    fn viqr() -> VietnameseOptions {
+        VietnameseOptions {
+            method: InputMethod::Viqr,
             ..VietnameseOptions::default()
         }
     }
@@ -429,6 +456,133 @@ mod tests {
                 ("a1b2", "áb2"),
             ],
         );
+    }
+
+    #[test]
+    fn viqr_sentences() {
+        check(
+            viqr(),
+            &[
+                ("Tie^'ng Vie^.t", "Tiếng Việt"),
+                ("Vie^.t Nam", "Việt Nam"),
+                ("Xin cha`o ca'c ba.n", "Xin chào các bạn"),
+                ("ddu+o+`ng pho^'", "đường phố"),
+                ("nguo+`i", "người"),
+                ("ngu+o+`i", "người"),
+                ("ho?i nga~", "hỏi ngã"),
+                ("hoa(.c", "hoặc"),
+                ("mu+a", "mưa"),
+                ("xua^n", "xuân"),
+                ("DDa^y", "Đây"),
+                ("TIE^'NG", "TIẾNG"),
+            ],
+        );
+    }
+
+    #[test]
+    fn viqr_marks_go_anywhere_and_come_off() {
+        check(
+            viqr(),
+            &[
+                ("tieng^'", "tiếng"),
+                ("hoa`n", "hoàn"),
+                ("hoan`", "hoàn"),
+                ("a''", "a'"),
+                ("a^^", "a^"),
+                ("a((", "a("),
+                ("o++", "o+"),
+                ("ddd", "dd"),
+                ("a'0", "a"),
+                ("a'`", "à"),
+            ],
+        );
+    }
+
+    #[test]
+    fn viqr_punctuation_with_nothing_to_mark_stays_punctuation() {
+        check(
+            viqr(),
+            &[
+                ("x.", "x."),
+                ("...", "..."),
+                ("f(x)", "f(x)"),
+                ("c++", "c++"),
+                ("i++", "i++"),
+                ("a0", "a0"),
+                ("3.5", "3.5"),
+                ("'a'", "'á"),
+                ("hoc`", "hoc`"),
+                ("ba. ", "bạ "),
+                ("ba.. ", "ba. "),
+                ("sao?? ", "sao? "),
+            ],
+        );
+    }
+
+    #[test]
+    fn telex_and_vni_leave_viqr_punctuation_alone() {
+        check(telex(), &[("a'", "a'"), ("a.", "a."), ("o+", "o+")]);
+        check(vni(), &[("a'", "a'"), ("a^", "a^"), ("a(", "a(")]);
+    }
+
+    #[test]
+    fn telex_without_the_lone_w() {
+        let plain_w = VietnameseOptions {
+            telex_w: false,
+            ..telex()
+        };
+        check(
+            plain_w,
+            &[
+                ("w", "w"),
+                ("tw", "tw"),
+                ("W", "W"),
+                ("ww", "ww"),
+                ("nhwng", "nhwng"),
+                // `w` still marks a vowel that is there.
+                ("tuw", "tư"),
+                ("nguwowif", "người"),
+                ("hoawcj", "hoặc"),
+                ("uww", "uw"),
+            ],
+        );
+        check(telex(), &[("w", "ư"), ("tw", "tư")]);
+    }
+
+    #[test]
+    fn telex_brackets_type_o_and_u_with_a_horn() {
+        let brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..telex()
+        };
+        check(
+            brackets,
+            &[
+                ("[", "ơ"),
+                ("]", "ư"),
+                ("th[", "thơ"),
+                ("m]a", "mưa"),
+                ("ng][if", "người"),
+                ("dd][ngf", "đường"),
+                ("t]j", "tự"),
+                // Twice gives the bracket back, like `ww`.
+                ("[[", "["),
+                ("]]", "]"),
+                ("th[[", "th["),
+                // Not a syllable: the bracket is a bracket.
+                ("a[", "a["),
+                ("[]", "ơ]"),
+                ("{", "{"),
+            ],
+        );
+        // Off, as it is by default, brackets are never letters.
+        check(telex(), &[("[", "["), ("th[", "th["), ("]]", "]]")]);
+        // The option belongs to Telex.
+        let vni_brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..vni()
+        };
+        check(vni_brackets, &[("[", "["), ("th]", "th]")]);
     }
 
     #[test]

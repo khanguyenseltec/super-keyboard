@@ -278,4 +278,25 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn viqr_punctuation_marks_a_syllable_or_ends_it() {
+        let mut h = KeyHandler::new(VietnameseOptions {
+            enabled: true,
+            method: InputMethod::Viqr,
+            ..VietnameseOptions::default()
+        });
+        // With nothing to mark, punctuation is the application's.
+        assert_eq!(h.key('.' as u32, 0), Response::default());
+        assert_eq!(type_keys(&mut h, "Vie^.t ").0, "Việt ");
+        // A mark the syllable cannot take ends it, and is typed after it.
+        type_keys(&mut h, "x");
+        assert_eq!(
+            h.key('?' as u32, 0),
+            Response {
+                handled: true,
+                commit: Some("x?".into())
+            }
+        );
+    }
 }

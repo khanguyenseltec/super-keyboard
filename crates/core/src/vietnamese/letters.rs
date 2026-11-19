@@ -80,8 +80,10 @@ pub struct Letter {
     pub base: char,
     pub upper: bool,
     pub mark: Mark,
-    /// An `ư` made by a lone Telex `w`; typing `w` again turns it back into `w`.
-    pub from_w: bool,
+    /// The key that typed this letter whole: `w` for the `ư` of a lone Telex
+    /// `w`, `[` or `]` for the `ơ` or `ư` of a Telex bracket. Typing the key
+    /// again turns the letter back into the key.
+    pub made_by: Option<char>,
 }
 
 impl Letter {
@@ -91,7 +93,7 @@ impl Letter {
             base: key.to_ascii_lowercase(),
             upper: key.is_uppercase(),
             mark: Mark::None,
-            from_w: false,
+            made_by: None,
         }
     }
 
@@ -126,7 +128,7 @@ mod tests {
             base,
             upper,
             mark,
-            from_w: false,
+            made_by: None,
         }
     }
 
