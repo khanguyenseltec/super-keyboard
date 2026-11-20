@@ -117,10 +117,12 @@ pub(super) struct Word {
     frozen: bool,
     /// The keys typed into the syllable, to put it back as typed.
     keys: Vec<char>,
-    /// A key that is not a letter (VIQR punctuation, a Telex bracket) marked
-    /// the syllable. If a later letter makes it impossible in Vietnamese, it
-    /// goes back to the keys as typed: `don't`, `ma.com`, `m[k]`.
-    marked_by_punctuation: bool,
+    /// The syllable as it was before the last key that is not a letter (VIQR
+    /// punctuation, a Telex bracket) marked it. If a later letter makes the
+    /// syllable impossible in Vietnamese, that mark is undone and the key typed
+    /// as itself, with the keys after it: `don't`, `ma.com`, `m[k]`,
+    /// `tie^'ng.txt`.
+    before_punctuation: Option<Box<Word>>,
     /// `keys` no longer spell what is shown (after Backspace, an undone key
     /// or `[[`), so putting the word back would lose or repeat letters.
     keys_stale: bool,
@@ -161,19 +163,37 @@ impl Word {
     /// with it; otherwise the tone stays and may move (`hoàn` ⌫ is `hòa`).
     pub fn pop(&mut self, style: ToneStyle) {
         let at = self.tone_position(style);
+        // A plain letter typed as its own key (`dom` ⌫) keeps the keys in
+        // step; Backspace over a mark or a tone does not.
+        let in_step = !self.keys_stale
+            && self.letters.last().copied() == self.keys.last().map(|&k| Letter::typed(k))
+            && at != Some(self.letters.len().saturating_sub(1));
         self.letters.pop();
         if at == Some(self.letters.len()) {
             self.tone = Tone::Level;
         }
         self.frozen = false;
-        // The keys no longer match the letters: nothing to put back any more.
-        self.keys_stale = true;
+        if in_step {
+            self.keys.pop();
+        } else {
+            self.keys_stale = true;
+        }
         self.tone_by = None;
         self.escaped = false;
         self.drop_stray_tone();
         if self.letters.is_empty() {
             self.clear();
         }
+    }
+
+    /// Turns the letter at `i`, which a key made whole (`ư` from `w`, `ơ` from
+    /// `[`), back into that key. Its tone goes with it; another vowel's stays.
+    fn revert_made_letter(&mut self, i: usize, key: char) {
+        // A made letter has a shape mark, so it carries the tone in any style.
+        if self.tone_position(ToneStyle::Classic) == Some(i) {
+            self.tone = Tone::Level;
+        }
+        self.letters[i] = Letter::typed(key);
     }
 
     /// A tone with no vowel left to carry it (after a revert or Backspace)
@@ -198,11 +218,25 @@ impl Word {
             let mut without = self.clone();
             without.letters.pop();
             without.keys.pop();
-            let mark_key = !key.is_ascii_alphanumeric() && Effect::of(options, key).is_some();
-            if key == '\\' || (mark_key && without.vowels().is_some()) {
+            let mark_key =
+                key == '\\' || (!key.is_ascii_alphanumeric() && Effect::of(options, key).is_some());
+            // After a finished syllable, or one that can be Vietnamese:
+            // `example\.com` and `\\server` keep their backslashes.
+            let syllable = without.frozen
+                || (without.vowels().is_some() && (!options.check_spelling || without.is_valid()));
+            if mark_key && syllable {
                 *self = without;
                 return self.push_literal(key);
             }
+            // A backslash that stays means this is not a syllable.
+            self.frozen = true;
+        }
+        if self.frozen && Effect::of(options, key) == Some(Effect::Escape) {
+            // `kho^ng\?\?`: an escape works after a finished syllable too.
+            self.letters.push(Letter::typed(key));
+            self.keys.push(key);
+            self.escaped = true;
+            return true;
         }
         if !self.frozen
             && let Some(effect) = Effect::of(options, key)
@@ -215,7 +249,7 @@ impl Word {
                 }
                 Outcome::Applied => {
                     if (viqr && !key.is_ascii_alphabetic()) || matches!(effect, Effect::Horned(_)) {
-                        self.marked_by_punctuation = true;
+                        self.before_punctuation = Some(Box::new(before));
                     }
                     self.keys.push(key);
                     return true;
@@ -248,24 +282,31 @@ impl Word {
         self.letters.push(Letter::typed(key));
         self.keys.push(key);
         if options.check_spelling
-            && self.marked_by_punctuation
             && !self.keys_stale
             && !self.is_valid()
+            && let Some(before) = self.before_punctuation.take()
         {
-            // Not Vietnamese after all (`don't`, `ma.com`): back to the keys.
-            self.letters = self.keys.iter().map(|&k| Letter::typed(k)).collect();
-            self.tone = Tone::Level;
+            // Not Vietnamese after all (`don't`): undo the punctuation's mark
+            // and type it, and the keys after it, as themselves.
+            let typed_after = self.keys[before.keys.len()..].to_vec();
+            *self = *before;
+            for key in typed_after {
+                self.letters.push(Letter::typed(key));
+                self.keys.push(key);
+            }
             self.frozen = true;
-            self.marked_by_punctuation = false;
+            self.before_punctuation = None;
         }
         true
     }
 
-    /// Types `key` as itself; the syllable stops changing.
+    /// Types `key` as itself; the syllable stops changing. Punctuation typed
+    /// after a syllable is kept with it: `Vie^.t.vn` is `Việt.vn`, not put back.
     fn push_literal(&mut self, key: char) -> bool {
         self.letters.push(Letter::typed(key));
         self.keys.push(key);
         self.frozen = true;
+        self.before_punctuation = None;
         true
     }
 
@@ -338,10 +379,11 @@ impl Word {
                 }
                 None => Outcome::NotApplicable,
             },
-            Effect::Horned(base) => match self.letters.last_mut() {
-                // `[[` is `[`: the letter the bracket made turns back into it.
-                Some(last) if last.made_by == Some(key) => {
-                    *last = Letter::typed(key);
+            Effect::Horned(base) => match self.letters.last().map(|l| l.made_by) {
+                // `[[` is `[`: the letter the bracket made turns back into it,
+                // taking its tone with it (`thu[r[` is `thu[`).
+                Some(made_by) if made_by == Some(key) => {
+                    self.revert_made_letter(self.letters.len() - 1, key);
                     Outcome::Reverted
                 }
                 _ => {
@@ -419,12 +461,13 @@ impl Word {
         }
         if self.letters[vowels.clone()].iter().any(horned) {
             // `ww` is `w`: the `ư` a lone `w` made turns back into the `w`.
-            if let Some(made) = self
+            if let Some(i) = self
                 .letters
-                .iter_mut()
-                .find(|l| w_key && l.made_by == Some('w'))
+                .iter()
+                .position(|l| w_key && l.made_by == Some('w'))
             {
-                *made = Letter::typed(if made.upper { 'W' } else { 'w' });
+                let w = if self.letters[i].upper { 'W' } else { 'w' };
+                self.revert_made_letter(i, w);
                 return Outcome::Reverted;
             }
             for letter in &mut self.letters[vowels] {
@@ -482,10 +525,11 @@ impl Word {
         if let Some(i) = group.iter().rposition(|l| l.mark != Mark::None) {
             return Some(vowels.start + i);
         }
-        // Punctuation typed into the syllable (`Kho?e?`) is not a final.
+        // The final is the letters right after the vowels; punctuation typed
+        // after the syllable (`Kho?e?`, `Kho?e?n`) ends it.
         let has_final = self.letters[vowels.end..]
-            .iter()
-            .any(|l| l.base.is_ascii_alphabetic());
+            .first()
+            .is_some_and(|l| l.base.is_ascii_alphabetic());
         let offset = match group.len() {
             1 => 0,
             _ if has_final => group.len() - 1,

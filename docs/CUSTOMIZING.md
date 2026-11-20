@@ -377,21 +377,23 @@ itself, so they always match what the keys do.
     `Khỏe?`;
   - any other mark changes the tone, and typed again at once is the punctuation instead:
     `kho^ng?` is `khổng`, `kho^ng??` is `không?`, `ba.n??` is `bạn?`;
-  - a backslash types the next mark as itself after a syllable, as in RFC 1456:
-    `kho^ng\?` is `không?`, `I\'m` is `I'm`, `\\` is `\`. Elsewhere it stays a backslash:
-    `C:\dev`, `\(x\)`.
+  - a backslash after a syllable types the next mark as itself, as in RFC 1456:
+    `kho^ng\?` is `không?`, `I\'m` is `I'm`, `ba\\` is `ba\`. Where there is no
+    Vietnamese syllable before it, it stays a backslash: `C:\dev`, `\(x\)`,
+    `example\.com`, `\\server`.
 - **Words that turn out not to be Vietnamese go back to what you typed.** With the
   spelling check on, a mark made by VIQR punctuation or a Telex bracket is put back when a
   later letter makes the word impossible: `don't`, `let's`, `ma.com`, `e.g.` and `m[k]`
   type as written. A word that is still a Vietnamese syllable stays one (`I'm` is `Ím`;
-  type `I\'m`), and so does a word you have edited with Backspace.
+  type `I\'m`). Only the last such mark is undone: `tie^'ng.txt` is `tiếng.txt`.
 - **Telex options.** `telex-w = false` stops a `w` with no vowel to mark from typing
   `ư` (`tw` stays `tw`); `uw`, `ow` and `aw` still type `ư`, `ơ` and `ă`.
   `telex-brackets = true` makes `[` type `ơ` and `]` type `ư` (`th[` is `thơ`, `m]a` is
   `mưa`, `TH[` is `THƠ`); typing the bracket twice types the bracket. Brackets that
   start a syllable still make letters (`x[0]` is `xơ0ư`, `[1]` is `ơ1ư`), so leave this
-  off if you type code, or type `[[` for a bracket (`t[[i]` is `t[i]`). Both are on the
-  Tiếng Việt tab while Telex is the method.
+  off if you type code. Typing the bracket again right after the `ơ` or `ư` it made types
+  the bracket (`t[[i]` is `t[i]`). Both are on the Tiếng Việt tab while Telex is the
+  method.
 - **Unicode form** (`unicode-form`) is how letters with marks are written. `"nfc"`, the
   default, writes each one as a single precomposed character (*dựng sẵn*): `ệ` is
   U+1EC7. `"nfd"` writes the plain letter followed by its marks as combining characters
@@ -400,7 +402,8 @@ itself, so they always match what the keys do.
   a letter of the syllable being typed still removes the whole letter.
 - The app and the input method read the same `[vietnamese]` settings, so keep them the
   same version (the `.deb` installs both). An older one does not know `method = "viqr"`,
-  `telex-w` or `telex-brackets`, and keeps its last good settings until it is updated.
+  `telex-w` or `telex-brackets` and ignores `settings.toml` until it is updated: it keeps
+  the settings it had, or starts with the defaults. It never writes over the file.
 
 ### With the physical keyboard, in every app (Ubuntu)
 

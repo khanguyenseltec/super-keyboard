@@ -644,7 +644,7 @@ mod tests {
                 ("kho^ng\\?", "không?"),
                 ("Vie^.t\\.", "Việt."),
                 ("a\\'", "a'"),
-                ("\\\\", "\\"),
+                ("ba\\\\", "ba\\"),
                 // Before anything else, the backslash stays.
                 ("a\\b", "a\\b"),
                 ("C:\\x", "C:\\x"),
@@ -663,7 +663,8 @@ mod tests {
                 ("ma.com", "ma.com"),
                 ("e.g.", "e.g."),
                 ("a(b)", "a(b)"),
-                ("ba.n.com", "ba.n.com"),
+                // Punctuation typed after a syllable stays with it.
+                ("ba.n.com", "bạn.com"),
                 ("Vie^.t", "Việt"),
                 // Still a Vietnamese syllable, so it stays one: type `I\'m`.
                 ("I'm", "Ím"),
@@ -740,18 +741,22 @@ mod tests {
     }
 
     #[test]
-    fn putting_back_never_loses_what_came_before_a_backspace() {
-        // After a Backspace the word is not put back as typed, so nothing
-        // typed earlier can be lost.
-        assert_eq!(compose(viqr(), "ban<'x"), "báx");
-        assert_eq!(compose(viqr(), "cann<'t"), "cánt");
-        assert_eq!(compose(viqr(), "dx<on't"), "dónt");
+    fn putting_back_after_a_backspace_keeps_every_letter() {
+        // Backspace over a plain letter keeps the keys in step, so the word
+        // is put back whole; over a mark, it is not put back at all.
+        assert_eq!(compose(viqr(), "ban<'x"), "ba'x");
+        assert_eq!(compose(viqr(), "cann<'t"), "can't");
+        assert_eq!(compose(viqr(), "dx<on't"), "don't");
+        assert_eq!(compose(viqr(), "dom<n't"), "don't");
+        assert_eq!(compose(viqr(), "ma.c<com"), "ma.com");
+        // Backspace takes the whole `ạ`.
+        assert_eq!(compose(viqr(), "ba.<x"), "bx");
         let brackets = VietnameseOptions {
             telex_brackets: true,
             ..telex()
         };
-        assert_eq!(compose(brackets, "mx<[k"), "mơk");
-        assert_eq!(compose(brackets, "th<h[k"), "thơk");
+        assert_eq!(compose(brackets, "mx<[k"), "m[k");
+        assert_eq!(compose(brackets, "th<h[k"), "th[k");
     }
 
     #[test]
@@ -776,6 +781,14 @@ mod tests {
                 ("x\\+y", "x\\+y"),
                 ("\\0", "\\0"),
                 ("a\\.b", "a.b"),
+                // Not Vietnamese before it: the spelling check keeps it.
+                ("example\\.com", "example\\.com"),
+                ("colou\\?r", "colou\\?r"),
+                ("\\\\server\\share", "\\\\server\\share"),
+                ("x\\\\y", "x\\\\y"),
+                ("dd\\d", "đ\\d"),
+                // After a finished syllable, as often as needed.
+                ("kho^ng\\?\\?", "không??"),
             ],
         );
         // A Backspace over the backslash cancels it.
@@ -785,6 +798,31 @@ mod tests {
     #[test]
     fn a_reverted_lone_w_takes_its_tone_with_it() {
         check(telex(), &[("nhwfwa", "nhwa")]);
+    }
+
+    #[test]
+    fn punctuation_typed_after_a_syllable_is_kept_with_it() {
+        check(
+            viqr(),
+            &[
+                ("Vie^.t.vn", "Việt.vn"),
+                ("tie^'ng.txt", "tiếng.txt"),
+                ("ho.c.x", "học.x"),
+                ("Kho?e?n", "Khỏe?n"),
+                ("Vie^.t\\.vn", "Việt.vn"),
+                ("kho^ng\\?a", "không?a"),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_reverted_letter_takes_its_own_tone_only() {
+        let brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..telex()
+        };
+        check(brackets, &[("thu[r[", "thu["), ("u[r[a", "u[a")]);
+        check(telex(), &[("nhwafw", "nhwa")]);
     }
 
     #[test]

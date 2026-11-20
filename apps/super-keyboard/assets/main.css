@@ -737,9 +737,10 @@ code {
     container-type: inline-size;
 }
 
-/* Two columns (492 to 743 px of grid) leave the third method alone on its
- * row: give it the whole row instead of half. */
-@container (min-width: 492px) and (max-width: 743px) {
+/* Two columns leave the third method alone on its row: give it the whole row.
+ * Two columns fit from 2 x 240 + 12 = 492px, three from 3 x 240 + 2 x 12 =
+ * 744px; keep these in step with the column minimum and gap above. */
+@container (492px <= width < 744px) {
     .vn-method:nth-child(3):last-child {
         grid-column: 1 / -1;
     }
