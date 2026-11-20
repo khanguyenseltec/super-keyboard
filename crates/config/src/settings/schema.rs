@@ -56,6 +56,7 @@ struct KeysFile {
     swipe_step: Option<i64>,
     /// `"auto"` or a number of pixels.
     height: Option<toml::Value>,
+    auto_pair: Option<bool>,
 }
 
 /// `[keyboard]`: its share of the window, and where it sits.
@@ -198,6 +199,7 @@ impl KeysFile {
                 KeySettings::SWIPE_STEP_PX,
             )?,
             height_px: auto_or_number("keys.height", self.height, KeySettings::HEIGHT_PX)?,
+            auto_pair: self.auto_pair.unwrap_or(KeySettings::default().auto_pair),
         })
     }
 }

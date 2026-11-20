@@ -13,6 +13,7 @@
 //! repeat-rate = 30      # repeats per second
 //! swipe-step = 12       # pixels of drag per cursor step on the space bar
 //! height = 52           # key height in pixels; leave out to fit the screen
+//! auto-pair = true      # typing ( [ { " ' ` types the closer too
 //!
 //! [keyboard]
 //! width = 80            # percent of the window width; leave out for the full width
@@ -210,6 +211,9 @@ pub struct KeySettings {
     pub swipe_step_px: u32,
     /// Key height in pixels; `None` sizes keys to the screen.
     pub height_px: Option<u32>,
+    /// Typing an opening bracket or quote types its closer too, with the
+    /// cursor between them.
+    pub auto_pair: bool,
 }
 
 impl KeySettings {
@@ -262,6 +266,7 @@ impl Default for KeySettings {
             repeat_rate: Self::REPEAT_RATE.default,
             swipe_step_px: Self::SWIPE_STEP_PX.default,
             height_px: None,
+            auto_pair: false,
         }
     }
 }
@@ -379,6 +384,7 @@ mod tests {
             repeat-rate = 20
             swipe-step = 8
             height = 56
+            auto-pair = true
             [keyboard]
             width = 75
             height = 100
@@ -429,6 +435,7 @@ mod tests {
                 repeat_rate: 20,
                 swipe_step_px: 8,
                 height_px: Some(56),
+                auto_pair: true,
             }
         );
         assert!(!settings.preview.show_log);
@@ -458,6 +465,15 @@ mod tests {
         let config = settings.keys.gesture_config();
         assert_eq!(config.repeat_interval, Duration::from_millis(50));
         assert_eq!(config.swipe_slop, 8.0);
+    }
+
+    #[test]
+    fn auto_pair_is_off_unless_asked_for() {
+        assert!(!Settings::default().keys.auto_pair);
+        let settings = Settings::from_toml("[keys]\nauto-pair = true").unwrap();
+        assert!(settings.keys.auto_pair);
+        let err = Settings::from_toml("[keys]\nauto-pair = \"yes\"").unwrap_err();
+        assert!(err.to_string().contains("invalid type"), "{err}");
     }
 
     #[test]

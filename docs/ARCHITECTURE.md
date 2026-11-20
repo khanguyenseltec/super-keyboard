@@ -100,8 +100,19 @@ variables. The keyboard's size is a share of the window set the same way: attrib
 on `.app` switch the keyboard to a flex share of the window, and labels size
 themselves with container query units.
 
+**Auto-pairing adds to output.** `engine::AutoPair` is the last stop before the sink,
+after the Vietnamese composer.
+With `[keys] auto-pair` on, a single typed `(`, `[`, `{`, `"`, `'` or `` ` `` becomes
+`Text("()")` followed by `Key(Left)`; typing the closer of the pair the cursor is in
+becomes `Key(Right)`, and Backspace on an empty pair is followed by `Key(Delete)`. It keeps
+no text, only the closers it typed and is still inside, and forgets them when the cursor
+moves. Because it only sends `Text` and those three keys, every sink gets it for free.
+It comes after the composer so that a bracket or quote the input method marks with
+(VIQR `(` and `` ` ``, Telex `[` and `]`) is a letter by the time it gets there; the
+composer's rewrites stay inside the pair, so the count of what was typed in it holds.
+
 **Vietnamese typing rewrites output.** `vietnamese::Composer` sits between `Keyboard`
-and the sink. It keeps the syllable being typed as letters plus one tone, applies Telex,
+and `AutoPair`. It keeps the syllable being typed as letters plus one tone, applies Telex,
 VNI or VIQR keys to it, places the tone from the whole syllable, and sends the difference from what
 is on screen as Backspaces and text (`hoa` + `f` sends ⌫ ⌫ `òa`). Anything that is not a
 letter or one of the method's mark keys ends the syllable and passes through. Because it only ever sends `Text` and

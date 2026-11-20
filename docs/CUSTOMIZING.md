@@ -73,6 +73,7 @@ repeat-delay = 400    # milliseconds before Backspace, Delete and the arrows rep
 repeat-rate = 30      # repeats per second (5-60)
 swipe-step = 12       # pixels of drag per cursor step on the space bar (4-40)
 height = "auto"       # "auto" fits keys to the screen, or a number of pixels (32-96)
+auto-pair = false     # typing ( [ { " ' ` types the closer too (see Auto-pair below)
 
 [keyboard]            # see Keyboard size below
 width = "auto"        # "auto", or a percentage of the window width (40-100)
@@ -111,6 +112,26 @@ title = "Mine"
 layout = "dev"
 sections = { number-row = true, brackets = false }
 ```
+
+## Auto-pair
+
+With `auto-pair = true` under `[keys]` (**settings → General → Auto-pair brackets and
+quotes**), typing an opening bracket or quote types its closer too and leaves the cursor
+between them: `(` types `()`, and likewise for `[`, `{`, `"`, `'` and `` ` ``.
+
+- **Typing the closer steps over it**, so `(x)` typed out of habit is `(x)`, not `(x))`.
+- **Backspace right after an opener removes both halves.**
+- **A quote after a letter or digit is typed alone**: `don't` stays `don't`.
+- Only a single typed character pairs. Keys that insert longer text (`$(`, `${`) and
+  chords such as `Ctrl+(` are not changed.
+- The keyboard cannot see the text it types into, so it remembers a pair only until the
+  cursor moves: after an arrow key or a shortcut, a closer is an ordinary character.
+
+It is off by default: editors that pair brackets themselves (most IDEs, and shells with
+a plugin for it) would double them. It works with Vietnamese typing: `("Vieejt")` is
+`("Việt")`. A bracket or quote your input method uses as a mark stays a mark right
+after a letter (VIQR `a(` is `ă`, `` a` `` is `à`; with Telex brackets on, `m[` is `mơ`)
+and opens a pair anywhere else.
 
 ## Themes
 

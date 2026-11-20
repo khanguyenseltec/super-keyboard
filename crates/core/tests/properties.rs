@@ -5,9 +5,9 @@ use std::time::Duration;
 
 use proptest::prelude::*;
 use super_keyboard_core::{
-    Action, Arrangement, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch, Layout,
-    Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink, TextBuffer,
-    ToneStyle, Trigger, UnicodeForm, VietnameseOptions,
+    Action, Arrangement, AutoPair, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch,
+    Layout, Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink,
+    TextBuffer, ToneStyle, Trigger, UnicodeForm, VietnameseOptions,
 };
 
 /// Every key id of the built-in layout.
@@ -408,6 +408,30 @@ fn modifier_and_layer_keys_produce_no_output() {
     }
 }
 
+proptest! {
+    /// With auto-pairing on, the text before the cursor is exactly what was
+    /// typed, and all that is ever added after the cursor is closers.
+    #[test]
+    fn auto_pair_keeps_what_was_typed_before_the_cursor(
+        keys in "[a-c0-9 ,;()\\[\\]{}\"'`]{0,40}",
+    ) {
+        let mut pairs = AutoPair::new(true);
+        let mut sink = PreviewSink::default();
+        for key in keys.chars() {
+            let output = match key {
+                ' ' => Output::named(NamedKey::Space, Modifiers::NONE),
+                key => Output::Text(key.into()),
+            };
+            for output in pairs.process(output) {
+                sink.emit(output);
+            }
+        }
+        let view = sink.buffer().view();
+        prop_assert_eq!(view.before, keys.as_str());
+        prop_assert!(view.after.chars().all(|c| ")]}\"'`".contains(c)), "{:?}", view.after);
+    }
+}
+
 /// A key for the Vietnamese property: a letter, a digit, VIQR punctuation, a
 /// bracket, a space or Backspace.
 fn vietnamese_key() -> impl Strategy<Value = Output> {
@@ -462,6 +486,51 @@ proptest! {
             if !may_erase {
                 prop_assert!(sink.text().starts_with(&fixed), "{:?} lost {fixed:?}", sink.text());
             }
+        }
+    }
+}
+
+proptest! {
+    /// Auto-pairing after the composer, as the app wires them: the text before
+    /// the cursor is what the composer alone would type, and all that is ever
+    /// added after the cursor is closers. So a mark key is never paired, and a
+    /// pair never breaks a syllable.
+    #[test]
+    fn auto_pair_after_vietnamese_types_what_the_composer_does(
+        keys in prop::collection::vec(
+            prop_oneof![
+                4 => vietnamese_key(),
+                1 => proptest::sample::select("(){}[]\"'`".chars().collect::<Vec<_>>())
+                    .prop_map(|c| Output::Text(c.into())),
+            ],
+            0..60,
+        ),
+        method in proptest::sample::select(InputMethod::ALL.to_vec()),
+        telex_brackets in any::<bool>(),
+        nfd in any::<bool>(),
+    ) {
+        let options = VietnameseOptions {
+            enabled: true,
+            method,
+            telex_brackets,
+            unicode_form: if nfd { UnicodeForm::Nfd } else { UnicodeForm::Nfc },
+            ..VietnameseOptions::default()
+        };
+        let (mut alone, mut composer) = (Composer::new(options), Composer::new(options));
+        let mut pairs = AutoPair::new(true);
+        let (mut expected, mut sink) = (PreviewSink::default(), PreviewSink::default());
+        for key in keys {
+            for output in alone.process(key.clone()) {
+                expected.emit(output);
+            }
+            for output in composer.process(key) {
+                for output in pairs.process(output) {
+                    sink.emit(output);
+                }
+            }
+            let view = sink.buffer().view();
+            prop_assert_eq!(view.before, expected.text());
+            prop_assert!(view.after.chars().all(|c| ")]}\"'`".contains(c)), "{:?}", view.after);
         }
     }
 }
