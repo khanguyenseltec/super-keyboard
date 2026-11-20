@@ -341,6 +341,10 @@ Super Keyboard types Vietnamese with **Telex**, **VNI** or **VIQR**, the standar
 of adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
 or open **settings → Tiếng Việt** for the method, tone placement, spelling check and a
 box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
+Super Keyboard types Vietnamese with **Telex** or **VNI**, the two standard ways of
+adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
+or open **settings → Tiếng Việt** for the method, tone placement, spelling check,
+Unicode form and a box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
 match what the keys do.
 
 | | Telex | VNI | VIQR | Result |
@@ -375,6 +379,12 @@ match what the keys do.
   `telex-brackets = true` makes `[` type `ơ` and `]` type `ư` (`th[` is `thơ`, `m]a` is
   `mưa`); typing the bracket twice types the bracket. Both are on the Tiếng Việt tab
   while Telex is the method.
+- **Unicode form** (`unicode-form`) is how letters with marks are written. `"nfc"`, the
+  default, writes each one as a single precomposed character (*dựng sẵn*): `ệ` is
+  U+1EC7. `"nfd"` writes the plain letter followed by its marks as combining characters
+  (*tổ hợp*): `ệ` is `e`, U+0323, U+0302. Both look the same on screen. Almost every
+  application expects NFC; choose NFD only for one that needs it. With NFD, Backspace on
+  a letter of the syllable being typed still removes the whole letter.
 
 ### With the physical keyboard, in every app (Ubuntu)
 

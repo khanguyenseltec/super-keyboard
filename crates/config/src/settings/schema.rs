@@ -12,7 +12,7 @@ use crate::{
     profile::{ProfileFile, is_valid_name, validate_profiles},
     style::{Style, StyleValue, StyleVar},
 };
-use super_keyboard_core::{Arrangement, InputMethod, ToneStyle, VietnameseOptions};
+use super_keyboard_core::{Arrangement, InputMethod, ToneStyle, UnicodeForm, VietnameseOptions};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -362,6 +362,10 @@ mod tests {
         assert_eq!(
             error("[vietnamese]\ntone-style = \"new\""),
             r#"`vietnamese.tone-style` must be "classic" or "modern", not "new""#
+        );
+        assert_eq!(
+            error("[vietnamese]\nunicode-form = \"utf-8\""),
+            r#"`vietnamese.unicode-form` must be "nfc" or "nfd", not "utf-8""#
         );
         assert!(error("[vietnamese]\nenable = true").contains("unknown field `enable`"));
         assert_eq!(

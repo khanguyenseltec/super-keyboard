@@ -7,7 +7,7 @@ use proptest::prelude::*;
 use super_keyboard_core::{
     Action, Arrangement, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch, Layout,
     Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink, TextBuffer,
-    ToneStyle, Trigger, VietnameseOptions,
+    ToneStyle, Trigger, UnicodeForm, VietnameseOptions,
 };
 
 /// Every key id of the built-in layout.

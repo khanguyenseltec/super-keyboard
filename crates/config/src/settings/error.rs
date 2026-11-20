@@ -42,6 +42,8 @@ pub enum SettingsError {
     UnknownInputMethod(String),
     #[error("`vietnamese.tone-style` must be \"classic\" or \"modern\", not {0:?}")]
     UnknownToneStyle(String),
+    #[error("`vietnamese.unicode-form` must be \"nfc\" or \"nfd\", not {0:?}")]
+    UnknownUnicodeForm(String),
     #[error("unknown style variable `{path}` (known: {known})")]
     UnknownStyleVar { path: String, known: String },
     #[error("`{path}`: {reason}")]

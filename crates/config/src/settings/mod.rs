@@ -349,7 +349,7 @@ impl Default for PreviewSettings {
 mod tests {
     use super::*;
     use crate::style::{StyleValue, StyleVar, ValueKind};
-    use super_keyboard_core::{InputMethod, ToneStyle};
+    use super_keyboard_core::{InputMethod, ToneStyle, UnicodeForm};
 
     #[test]
     fn empty_file_is_the_defaults() {

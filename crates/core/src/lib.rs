@@ -57,4 +57,4 @@ pub use layout::{
     Section, Swipe,
 };
 pub use output::{BufferView, KeyCode, Motion, Output, OutputSink, PreviewSink, TextBuffer};
-pub use vietnamese::{Composer, InputMethod, ToneStyle, VietnameseOptions};
+pub use vietnamese::{Composer, InputMethod, ToneStyle, UnicodeForm, VietnameseOptions};

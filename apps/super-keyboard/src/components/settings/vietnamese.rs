@@ -6,7 +6,9 @@
 
 use dioxus::prelude::*;
 use super_keyboard_config::Settings;
-use super_keyboard_core::{InputMethod, ToneStyle, VietnameseOptions, vietnamese::transliterate};
+use super_keyboard_core::{
+    InputMethod, ToneStyle, UnicodeForm, VietnameseOptions, vietnamese::transliterate,
+};
 
 use super::fields::ToggleField;
 use crate::state::AppState;
@@ -213,6 +215,24 @@ pub fn VietnameseSettings() -> Element {
                 if vi.method == InputMethod::Viqr {
                     " The same goes for punctuation after a word: " code { "ba.." } " is " code { "ba." } "."
                 }
+            }
+
+            h3 { class: "group-title", "Unicode output · Bảng mã Unicode" }
+            div { class: "segmented", role: "radiogroup", aria_label: "Unicode output",
+                for form in UnicodeForm::ALL {
+                    button {
+                        key: "{form.name()}",
+                        class: "segment",
+                        role: "radio",
+                        aria_checked: vi.unicode_form == form,
+                        onclick: move |_| state.update_settings(|s| s.vietnamese.unicode_form = form),
+                        span { class: "segment-label", "{form.label()}" }
+                        span { class: "segment-sample", "{unicode_sample(vi, form)}" }
+                    }
+                }
+            }
+            p { class: "hint",
+                "Precomposed (dựng sẵn) writes each letter with its marks as one character, which is what almost every app expects. Decomposed (tổ hợp) writes the letter and then its marks; choose it only for an app that needs it."
             }
 
             h3 { class: "group-title", "Try it · Gõ thử" }

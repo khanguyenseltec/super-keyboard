@@ -216,6 +216,7 @@ impl SettingsDocument {
         edit_section(root, "vietnamese", |table| {
             let method = Scalar::Str(vi.method.name().into());
             let tone_style = Scalar::Str(vi.tone_style.name().into());
+            let unicode_form = Scalar::Str(vi.unicode_form.name().into());
             set(
                 table,
                 "enabled",
