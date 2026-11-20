@@ -413,7 +413,7 @@ fn modifier_and_layer_keys_produce_no_output() {
 fn vietnamese_key() -> impl Strategy<Value = Output> {
     prop_oneof![
         8 => proptest::sample::select(
-            "aeiouyAEOdDswfrxjzWbcghknmptqv0123456789'`?~.^(+[]"
+            "aeiouyAEOdDswfrxjzWbcghknmptqv0123456789'`?~.^(+[]\\"
                 .chars()
                 .collect::<Vec<_>>()
         )

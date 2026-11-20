@@ -341,8 +341,8 @@ A hidden profile still works if `profile` names it; the menu shows it while it i
 Super Keyboard types Vietnamese with **Telex**, **VNI** or **VIQR**, the standard ways
 of adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
 or open **settings → Tiếng Việt** for the method, tone placement, spelling check,
-Unicode form and a box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
-match what the keys do.
+Unicode form and a box to try keys in. The tab's cheat sheets are typed by the engine
+itself, so they always match what the keys do.
 
 | | Telex | VNI | VIQR | Result |
 |---|---|---|---|---|
@@ -366,16 +366,30 @@ match what the keys do.
 - **Spelling check** (`check-spelling`) only changes syllables that can be Vietnamese,
   so `for`, `class`, `print` and most code type as written. Words such as `test`
   (`tét`) still look Vietnamese: switch to **EN** for English.
-- A syllable ends at anything that is not a letter (or, with VNI, a digit): space,
-  punctuation, Enter, an arrow key or a `Ctrl` chord. Chords are never changed.
+- A syllable ends at anything that is neither a letter nor a key the method marks with
+  (VNI digits, VIQR punctuation, Telex brackets when they are on) and has something to
+  mark: space, other punctuation, Enter, an arrow key or a `Ctrl` chord. Chords are never
+  changed.
 - **VIQR marks are punctuation**, so they only act right after a syllable they can mark:
-  `ba.` is `bạ`, while `x.`, `f(x)`, `c++` and `3.5` type as written. For the punctuation
-  itself after a word, type it twice: `ba..` is `ba.` and `sao??` is `sao?`.
+  `ba.` is `bạ`, while `x.`, `f(x)`, `c++` and `3.5` type as written. At the end of a
+  sentence:
+  - a mark the word already has is the punctuation: `Vie^.t.` is `Việt.`, `Kho?e?` is
+    `Khỏe?`;
+  - any other mark changes the tone, and typed again at once is the punctuation instead:
+    `kho^ng?` is `khổng`, `kho^ng??` is `không?`, `ba.n??` is `bạn?`;
+  - a backslash types the next mark as itself, as in RFC 1456: `kho^ng\?` is `không?`,
+    `I\'m` is `I'm`, `\\` is `\`.
+- **Words that turn out not to be Vietnamese go back to what you typed.** With the
+  spelling check on, a mark made by VIQR punctuation or a Telex bracket is put back when a
+  later letter makes the word impossible: `don't`, `let's`, `ma.com`, `e.g.` and `m[k]`
+  type as written. A word that is still a Vietnamese syllable stays one (`I'm` is `Ím`;
+  type `I\'m`).
 - **Telex options.** `telex-w = false` stops a `w` with no vowel to mark from typing
   `ư` (`tw` stays `tw`); `uw`, `ow` and `aw` still type `ư`, `ơ` and `ă`.
   `telex-brackets = true` makes `[` type `ơ` and `]` type `ư` (`th[` is `thơ`, `m]a` is
-  `mưa`); typing the bracket twice types the bracket. Both are on the Tiếng Việt tab
-  while Telex is the method.
+  `mưa`, `TH[` is `THƠ`); typing the bracket twice types the bracket. Brackets that
+  start a syllable still make letters (`x[0]` is `xơ0ư`), so leave this off if you type
+  code, or type `[[`. Both are on the Tiếng Việt tab while Telex is the method.
 - **Unicode form** (`unicode-form`) is how letters with marks are written. `"nfc"`, the
   default, writes each one as a single precomposed character (*dựng sẵn*): `ệ` is
   U+1EC7. `"nfd"` writes the plain letter followed by its marks as combining characters

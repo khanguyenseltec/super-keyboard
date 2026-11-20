@@ -24,7 +24,7 @@ programmers need them, with layouts defined as code.
 """
 
 # The .deb also installs the Vietnamese input method for IBus, so the physical
-# keyboard types Telex or VNI in every application, in sync with the app.
+# keyboard types Telex, VNI or VIQR in every application, in sync with the app.
 # Build it first: cargo build --release -p super-keyboard-ibus
 [bundle.deb]
 recommends = ["ibus"]

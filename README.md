@@ -13,7 +13,7 @@
 [![Rust 1.88+](https://img.shields.io/badge/rust-1.88%2B-ff9e64.svg?logo=rust)](https://www.rust-lang.org)
 [![Dioxus 0.7](https://img.shields.io/badge/Dioxus-0.7-bb9af7.svg)](https://dioxuslabs.com)
 [![Platforms: Ubuntu and Android](https://img.shields.io/badge/platforms-Ubuntu%20%7C%20Android-3ddc84.svg)](#install)
-[![Tiếng Việt: Telex and VNI](https://img.shields.io/badge/Ti%E1%BA%BFng%20Vi%E1%BB%87t-Telex%20%7C%20VNI-da251d.svg)](#tiếng-việt)
+[![Tiếng Việt: Telex, VNI and VIQR](https://img.shields.io/badge/Ti%E1%BA%BFng%20Vi%E1%BB%87t-Telex%20%7C%20VNI%20%7C%20VIQR-da251d.svg)](#tiếng-việt)
 <br>
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](docs/ROADMAP.md)
 [![Good first issues](https://img.shields.io/github/issues/tristanseltec/super-keyboard/good%20first%20issue?label=good%20first%20issues&color=7057ff)](https://github.com/tristanseltec/super-keyboard/labels/good%20first%20issue)
@@ -69,7 +69,7 @@ the moments when a touchscreen is all you have and you still need to write code:
 </td>
 <td width="50%" valign="top">
 
-**🇻🇳 Tiếng Việt built in.** Telex or VNI on the on-screen keys, and on your physical
+**🇻🇳 Tiếng Việt built in.** Telex, VNI or VIQR on the on-screen keys, and on your physical
 keyboard in every Ubuntu app. One switch, one set of settings, in sync both ways. Most code
 and English type as written.
 
@@ -113,7 +113,7 @@ Layouts and themes are data that can never run code or load anything.
 | **Typing** | Developer layout: brackets, Esc and Tab on the base layer; symbols, operators, navigation and F-keys one tap away | ✅ Done |
 | | One-shot and locked modifiers: tap `ctrl` then `c` for `Ctrl+C`; tap twice to lock | ✅ Done |
 | | Long-press actions, key repeat for Backspace and arrows, space-bar cursor swipe (Shift selects) | ✅ Done |
-| **Tiếng Việt** | Telex and VNI on the on-screen keys, with a VI / EN switch and live cheat sheets | ✅ Done |
+| **Tiếng Việt** | Telex, VNI and VIQR on the on-screen keys, with a VI / EN switch and live cheat sheets | ✅ Done |
 | | Vietnamese with the physical keyboard in every Ubuntu app (IBus), in sync with the app | ✅ Done |
 | | Shorthand (*gõ tắt*), English auto-restore, per-app VI / EN, VIQR | 🗺️ v0.5 |
 | **Make it yours** | Layouts in TOML ("keyboard as code") with clear, located errors | ✅ Done |
@@ -132,16 +132,16 @@ Layouts and themes are data that can never run code or load anything.
 
 <img src="docs/images/vietnamese.png" width="100%" alt="The Tiếng Việt settings tab with Telex and VNI cheat sheets, next to an Ubuntu terminal where Xin chào, Việt Nam is being typed with the physical keyboard, and GNOME's VI input menu open with Telex, VNI, tone style and spelling options">
 
-Super Keyboard types Vietnamese the two ways Vietnamese typists already know. Turn it on
+Super Keyboard types Vietnamese the ways Vietnamese typists already know. Turn it on
 with the **VI** button in the top bar, and pick the method on the **Tiếng Việt** settings
 tab, whose cheat sheets are typed by the engine itself:
 
-| | Telex | VNI | Result |
-|---|---|---|---|
-| Tones | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | sắc á · huyền à · hỏi ả · ngã ã · nặng ạ |
-| Remove the tone | `z` | `0` | a |
-| Letters | `aa` `aw` `ee` `oo` `ow` `uw` `dd` | `a6` `a8` `e6` `o6` `o7` `u7` `d9` | â ă ê ô ơ ư đ |
-| Example | `Tieesng Vieejt` | `Tie61ng Vie65t` | **Tiếng Việt** |
+| | Telex | VNI | VIQR | Result |
+|---|---|---|---|---|
+| Tones | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | `'` `` ` `` `?` `~` `.` | sắc á · huyền à · hỏi ả · ngã ã · nặng ạ |
+| Remove the tone | `z` | `0` | `0` | a |
+| Letters | `aa` `aw` `ee` `oo` `ow` `uw` `dd` | `a6` `a8` `e6` `o6` `o7` `u7` `d9` | `a^` `a(` `e^` `o^` `o+` `u+` `dd` | â ă ê ô ơ ư đ |
+| Example | `Tieesng Vieejt` | `Tie61ng Vie65t` | `Tie^'ng Vie^.t` | **Tiếng Việt** |
 
 - **Type naturally.** Marks can go anywhere in the word (`tiengse` is *tiếng*), and the
   tone moves to the right vowel as the word grows (`hòa` + `n` is *hoàn*).
@@ -496,7 +496,7 @@ type Vietnamese into the app's preview today, and into other apps from v0.3.
 <summary><b>How is it different from Unikey, ibus-bamboo or ibus-unikey?</b></summary>
 <br>
 
-They are great input methods, and the Telex and VNI rules here type the same way. What is
+They are great input methods, and the Telex, VNI and VIQR rules here type the same way. What is
 different is that Super Keyboard's input method shares one set of settings with an
 on-screen keyboard built for code: switch VI / EN or the method in either place and the
 other follows, and the spelling check keeps most code and English as typed. Use whichever you
@@ -560,8 +560,8 @@ licensed like the code. Writing about Super Keyboard? Use them freely.
 
 Super Keyboard is built with [Dioxus](https://dioxuslabs.com), [toml_edit](https://github.com/toml-rs/toml),
 [zbus](https://github.com/dbus2/zbus), [IBus](https://github.com/ibus/ibus) and
-[proptest](https://github.com/proptest-rs/proptest). The Telex and VNI rules follow the
-conventions Vietnamese typists know from Unikey and its successors. The brand uses the
+[proptest](https://github.com/proptest-rs/proptest). The Telex, VNI and VIQR rules follow
+the conventions Vietnamese typists know from Unikey, its successors and RFC 1456. The brand uses the
 [Ubuntu Sans](https://github.com/canonical/Ubuntu-Sans-fonts) and
 [Fira Code](https://github.com/tonsky/FiraCode) fonts. The colour schemes behind several
 themes are the work of their authors, all MIT licensed:

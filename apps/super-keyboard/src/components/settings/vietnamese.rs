@@ -213,7 +213,10 @@ pub fn VietnameseSettings() -> Element {
                     "; off, w is a plain letter there and ư is " code { "uw" } "."
                 }
                 if vi.method == InputMethod::Viqr {
-                    " The same goes for punctuation after a word: " code { "ba.." } " is " code { "ba." } "."
+                    " After a word, a mark it already has is punctuation ("
+                    code { "Vie^.t." } " is " code { "Việt." } "); type any other twice ("
+                    code { "kho^ng??" } " is " code { "không?" } ") or after a backslash ("
+                    code { "kho^ng\\?" } ")."
                 }
             }
 
@@ -346,7 +349,13 @@ fn MethodCard(
     let selected = options.method == method;
     let options = VietnameseOptions { method, ..options };
     let (description, sample, tones, letters) = about(method);
-    let rule = |(keys, name): Rule| (keys, transliterate(keys, options), name);
+    let rule = |(keys, name): Rule| {
+        (
+            keys,
+            transliterate(keys, options),
+            rule_note(keys, name, options),
+        )
+    };
     let tones: Vec<_> = tones.into_iter().map(rule).collect();
     let letters: Vec<_> = letters.into_iter().map(rule).collect();
 
@@ -432,6 +441,16 @@ fn undo_sample(method: InputMethod) -> &'static str {
         InputMethod::Telex => "ass → as",
         InputMethod::Vni => "a11 → a1",
         InputMethod::Viqr => "a'' → a'",
+    }
+}
+
+/// The note under a cheat-sheet rule, true to the options: `uw` is "or w"
+/// only while a lone `w` types `ư`.
+fn rule_note(keys: &str, note: &'static str, options: VietnameseOptions) -> &'static str {
+    if keys == "uw" && !options.telex_w {
+        ""
+    } else {
+        note
     }
 }
 
@@ -532,6 +551,19 @@ mod tests {
             detected.is_some(),
             cfg!(all(target_os = "linux", not(target_arch = "wasm32")))
         );
+    }
+
+    #[test]
+    fn the_uw_note_follows_the_lone_w_option() {
+        let on = VietnameseOptions::default();
+        let off = VietnameseOptions {
+            telex_w: false,
+            ..on
+        };
+        assert_eq!(rule_note("uw", "or w", on), "or w");
+        assert_eq!(rule_note("uw", "or w", off), "");
+        assert_eq!(transliterate("w", off), "w", "the note matches the engine");
+        assert_eq!(rule_note("af", "huyền", off), "huyền");
     }
 
     #[test]

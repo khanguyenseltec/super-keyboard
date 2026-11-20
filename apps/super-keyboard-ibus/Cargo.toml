@@ -1,6 +1,6 @@
 [package]
 name = "super-keyboard-ibus"
-description = "Vietnamese typing (Telex and VNI) with the physical keyboard in every app, as an IBus engine that shares its settings with Super Keyboard."
+description = "Vietnamese typing (Telex, VNI and VIQR) with the physical keyboard in every app, as an IBus engine that shares its settings with Super Keyboard."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

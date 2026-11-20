@@ -1,7 +1,7 @@
 //! Settings shared with the Super Keyboard app, through `settings.toml`.
 //!
 //! Both sides read and write the same `[vietnamese]` section and both watch
-//! the file, so switching VI / EN or Telex / VNI on either side shows on the
+//! the file, so switching VI / EN or the method on either side shows on the
 //! other within a second. Writing goes through `super-keyboard-config`, which
 //! keeps the file's comments.
 

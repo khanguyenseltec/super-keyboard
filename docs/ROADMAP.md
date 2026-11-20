@@ -109,7 +109,7 @@ For everyone who types Vietnamese all day, and for the Vietnamese developer comm
 - [ ] **Gõ tắt** (shorthand): your own abbreviations that expand as you type, such as `vn` → `Việt Nam`, in `settings.toml` ([#34](https://github.com/tristanseltec/super-keyboard/issues/34))
 - [ ] Auto-restore English: a word that cannot be Vietnamese goes back to the keys typed when it ends (`tét` → `test`) ([#35](https://github.com/tristanseltec/super-keyboard/issues/35))
 - [ ] Remember VI or EN per app on the desktop (a terminal in EN, a chat app in VI) ([#36](https://github.com/tristanseltec/super-keyboard/issues/36))
-- [ ] More methods: VIQR, and Telex options (no lone `w` → `ư`, brackets for `ơ` and `ư`) (**good first issue**, [#37](https://github.com/tristanseltec/super-keyboard/issues/37))
+- [x] More methods: VIQR, and Telex options (no lone `w` → `ư`, brackets for `ơ` and `ư`) ([#37](https://github.com/tristanseltec/super-keyboard/issues/37), [#50](https://github.com/tristanseltec/super-keyboard/pull/50))
 - [ ] Output in NFC (default) or NFD Unicode, for the rare app that needs it (**good first issue**, [#38](https://github.com/tristanseltec/super-keyboard/issues/38))
 - [ ] A Vietnamese phone layout section: `ă â đ ê ô ơ ư` one tap away, for typing without Telex or VNI (**good first issue**, [#39](https://github.com/tristanseltec/super-keyboard/issues/39))
 - [ ] The app's interface in Vietnamese, the first of its translations ([#40](https://github.com/tristanseltec/super-keyboard/issues/40))

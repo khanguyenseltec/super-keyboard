@@ -227,8 +227,9 @@ impl Composer {
 
     /// Adds a typed character to the syllable, as an input method that shows
     /// the syllable as pre-edit text does. Returns false when `key` is not part
-    /// of a syllable (a space, punctuation, a Telex digit, or a VNI digit or
-    /// VIQR mark with nothing to mark): the caller then finishes the syllable with
+    /// of a syllable (a space, punctuation, a Telex digit, or a VNI digit,
+    /// VIQR mark or Telex bracket with nothing to mark): the caller then
+    /// finishes the syllable with
     /// [`take`](Self::take) and handles `key` itself. Works whether or not
     /// [`VietnameseOptions::enabled`] is set; checking it is the caller's job.
     pub fn push_key(&mut self, key: char) -> bool {
@@ -285,15 +286,10 @@ impl Composer {
         vec![output]
     }
 
+    /// Letters, and the other keys the method marks with: VNI digits, VIQR
+    /// punctuation and `\\`, Telex brackets when they are on.
     fn is_word_key(&self, key: char) -> bool {
-        key.is_ascii_alphabetic()
-            || match self.options.method {
-                InputMethod::Telex => self.options.telex_brackets && matches!(key, '[' | ']'),
-                InputMethod::Vni => key.is_ascii_digit(),
-                InputMethod::Viqr => {
-                    matches!(key, '\'' | '`' | '?' | '~' | '.' | '^' | '(' | '+' | '0')
-                }
-            }
+        key.is_ascii_alphabetic() || word::Effect::of(&self.options, key).is_some()
     }
 }
 
@@ -618,6 +614,113 @@ mod tests {
                 ("sao?? ", "sao? "),
             ],
         );
+    }
+
+    #[test]
+    fn viqr_sentence_ends_keep_the_tone() {
+        check(
+            viqr(),
+            &[
+                // A tone the syllable already has: the key is punctuation.
+                ("To^i ye^u tie^'ng Vie^.t.", "Tôi yêu tiếng Việt."),
+                ("ho.c. ", "học. "),
+                ("Kho?e?", "Khỏe?"),
+                ("Vie^.t..", "Việt.."),
+                // Another tone: the key changes it, and again at once takes
+                // it back and is typed.
+                ("ba.n?", "bản"),
+                ("ba.n??", "bạn?"),
+                ("Ba.n kho?e kho^ng??", "Bạn khỏe không?"),
+                ("Xin chao..", "Xin chao."),
+            ],
+        );
+    }
+
+    #[test]
+    fn viqr_backslash_types_a_mark_as_itself() {
+        check(
+            viqr(),
+            &[
+                ("kho^ng\\?", "không?"),
+                ("Vie^.t\\.", "Việt."),
+                ("a\\'", "a'"),
+                ("\\\\", "\\"),
+                // Before anything else, the backslash stays.
+                ("a\\b", "a\\b"),
+                ("C:\\x", "C:\\x"),
+            ],
+        );
+    }
+
+    #[test]
+    fn viqr_puts_back_what_is_not_vietnamese() {
+        check(
+            viqr(),
+            &[
+                ("don't", "don't"),
+                ("let's go", "let's go"),
+                ("can't", "can't"),
+                ("ma.com", "ma.com"),
+                ("e.g.", "e.g."),
+                ("a(b)", "a(b)"),
+                ("ba.n.com", "ba.n.com"),
+                ("Vie^.t", "Việt"),
+                // Still a Vietnamese syllable, so it stays one: type `I\'m`.
+                ("I'm", "Ím"),
+                ("I\\'m", "I'm"),
+            ],
+        );
+        // Without the spelling check nothing is put back.
+        let loose = VietnameseOptions {
+            check_spelling: false,
+            ..viqr()
+        };
+        check(loose, &[("don't", "dónt")]);
+    }
+
+    #[test]
+    fn telex_brackets_follow_the_case_and_give_back_code() {
+        let brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..telex()
+        };
+        check(
+            brackets,
+            &[
+                ("TH[", "THƠ"),
+                ("NG][IF", "NGƯỜI"),
+                ("Th[", "Thơ"),
+                ("T[", "Tơ"),
+                ("m[k]", "m[k]"),
+                // `xơ` is a syllable, so indexing needs brackets off or `[[`.
+                ("x[0]", "xơ0ư"),
+                ("x[[0]]", "x[0]"),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_reverted_letter_takes_its_tone_with_it() {
+        let type_then = |options: VietnameseOptions, keys: &str, after: &str| {
+            let mut composer = Composer::new(VietnameseOptions {
+                enabled: true,
+                ..options
+            });
+            for key in keys.chars() {
+                composer.push_key(key);
+            }
+            composer.backspace();
+            for key in after.chars() {
+                composer.push_key(key);
+            }
+            composer.composing()
+        };
+        let brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..telex()
+        };
+        assert_eq!(type_then(brackets, "th[f[", "a"), "tha");
+        assert_eq!(type_then(telex(), "nhwfw", "a"), "nha");
     }
 
     #[test]
