@@ -7,7 +7,7 @@ use proptest::prelude::*;
 use super_keyboard_core::{
     Action, Arrangement, Composer, Gestures, InputMethod, KeyId, Keyboard, Keymap, Latch, Layout,
     Modifier, Modifiers, Motion, NamedKey, Output, OutputSink, PressKind, PreviewSink, TextBuffer,
-    ToneStyle, Trigger, VietnameseOptions,
+    ToneStyle, Trigger, UnicodeForm, VietnameseOptions,
 };
 
 /// Every key id of the built-in layout.
@@ -429,12 +429,14 @@ proptest! {
         vni in any::<bool>(),
         modern in any::<bool>(),
         check_spelling in any::<bool>(),
+        nfd in any::<bool>(),
     ) {
         let mut composer = Composer::new(VietnameseOptions {
             enabled: true,
             method: if vni { InputMethod::Vni } else { InputMethod::Telex },
             tone_style: if modern { ToneStyle::Modern } else { ToneStyle::Classic },
             check_spelling,
+            unicode_form: if nfd { UnicodeForm::Nfd } else { UnicodeForm::Nfc },
         });
         let mut sink = PreviewSink::default();
         sink.emit(Output::Text("> ".into()));

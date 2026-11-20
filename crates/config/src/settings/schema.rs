@@ -12,7 +12,7 @@ use crate::{
     profile::{ProfileFile, is_valid_name, validate_profiles},
     style::{Style, StyleValue, StyleVar},
 };
-use super_keyboard_core::{Arrangement, InputMethod, ToneStyle, VietnameseOptions};
+use super_keyboard_core::{Arrangement, InputMethod, ToneStyle, UnicodeForm, VietnameseOptions};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -83,6 +83,7 @@ struct VietnameseFile {
     method: Option<String>,
     tone_style: Option<String>,
     check_spelling: Option<bool>,
+    unicode_form: Option<String>,
 }
 
 impl VietnameseFile {
@@ -103,6 +104,12 @@ impl VietnameseFile {
                 }
             },
             check_spelling: self.check_spelling.unwrap_or(defaults.check_spelling),
+            unicode_form: match self.unicode_form {
+                None => defaults.unicode_form,
+                Some(name) => {
+                    UnicodeForm::from_name(&name).ok_or(SettingsError::UnknownUnicodeForm(name))?
+                }
+            },
         })
     }
 }
@@ -350,6 +357,10 @@ mod tests {
         assert_eq!(
             error("[vietnamese]\ntone-style = \"new\""),
             r#"`vietnamese.tone-style` must be "classic" or "modern", not "new""#
+        );
+        assert_eq!(
+            error("[vietnamese]\nunicode-form = \"utf-8\""),
+            r#"`vietnamese.unicode-form` must be "nfc" or "nfd", not "utf-8""#
         );
         assert!(error("[vietnamese]\nenable = true").contains("unknown field `enable`"));
         assert_eq!(

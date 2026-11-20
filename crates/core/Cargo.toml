@@ -18,3 +18,4 @@ workspace = true
 
 [dev-dependencies]
 proptest = "1"
+unicode-normalization = "0.1"
