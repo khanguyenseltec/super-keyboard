@@ -58,6 +58,10 @@ repeat-rate = 30
 swipe-step = 12
 # Key height: "auto" sizes keys to the screen, or a number of pixels (32-96).
 height = "auto"
+# Type the closing bracket or quote with the opening one: ( types () and puts
+# the cursor between them, and likewise for [ { " ' `. Leave it off for
+# editors that pair brackets themselves, or they will be doubled.
+auto-pair = false
 
 [keyboard]
 # Width: "auto" is the full window, at most 1100 pixels on wide screens; or a
@@ -76,13 +80,15 @@ show-log = true
 
 [vietnamese]
 # Type Vietnamese with the keys: key sequences become letters with marks as you
-# type, so "Vieejt" (Telex) or "Vie65t" (VNI) is "Việt". The VI button in the
-# top bar switches it on and off.
+# type, so "Vieejt" (Telex), "Vie65t" (VNI) or "Vie^.t" (VIQR) is "Việt". The
+# VI button in the top bar switches it on and off.
 enabled = false
 # "telex": s f r x j = sắc huyền hỏi ngã nặng, z removes the tone;
 #          aa ee oo = â ê ô, aw = ă, ow uw (or w) = ơ ư, dd = đ.
 # "vni":   1 2 3 4 5 = sắc huyền hỏi ngã nặng, 0 removes the tone;
 #          6 = â ê ô, 8 = ă, 7 = ơ ư, 9 = đ.
+# "viqr":  ' ` ? ~ . = sắc huyền hỏi ngã nặng, 0 removes the tone;
+#          ^ = â ê ô, ( = ă, + = ơ ư, dd = đ.
 method = "telex"
 # Where the tone goes in oa, oe and uy: "classic" (hòa, khỏe, thủy) or
 # "modern" (hoà, khoẻ, thuỷ).
@@ -90,6 +96,16 @@ tone-style = "classic"
 # Only change syllables that can be Vietnamese, so most English words and code
 # type as written.
 check-spelling = true
+# Telex: a w with no vowel to mark types ư, so "tw" is "tư". With false, w is
+# a plain letter there and ư is typed "uw".
+telex-w = true
+# Telex: [ types ơ and ] types ư. Typing the bracket twice types the bracket.
+telex-brackets = false
+# How letters with marks are written in Unicode: "nfc" as one character each
+# (ệ), which is what almost every app expects; or "nfd" as the plain letter
+# followed by its marks as characters of their own (e, dot below, circumflex),
+# for the rare app that needs that.
+unicode-form = "nfc"
 
 # Changes to the theme: for every theme, then for dark or light themes only.
 # Values are CSS colours (#7aa2f7, rgb(...), oklch(...), colour names), lengths
@@ -184,7 +200,14 @@ impl SettingsDocument {
             let height = keys
                 .height_px
                 .map_or(Scalar::Str("auto".into()), |px| Scalar::Int(px.into()));
-            added | set(table, "height", height, keys.height_px.is_none())
+            added
+                | set(table, "height", height, keys.height_px.is_none())
+                | set(
+                    table,
+                    "auto-pair",
+                    Scalar::Bool(keys.auto_pair),
+                    keys.auto_pair == default_keys.auto_pair,
+                )
         });
 
         let keyboard = &settings.keyboard;
@@ -209,6 +232,7 @@ impl SettingsDocument {
         edit_section(root, "vietnamese", |table| {
             let method = Scalar::Str(vi.method.name().into());
             let tone_style = Scalar::Str(vi.tone_style.name().into());
+            let unicode_form = Scalar::Str(vi.unicode_form.name().into());
             set(
                 table,
                 "enabled",
@@ -226,6 +250,24 @@ impl SettingsDocument {
                     "check-spelling",
                     Scalar::Bool(vi.check_spelling),
                     vi.check_spelling == default_vi.check_spelling,
+                )
+                | set(
+                    table,
+                    "telex-w",
+                    Scalar::Bool(vi.telex_w),
+                    vi.telex_w == default_vi.telex_w,
+                )
+                | set(
+                    table,
+                    "telex-brackets",
+                    Scalar::Bool(vi.telex_brackets),
+                    vi.telex_brackets == default_vi.telex_brackets,
+                )
+                | set(
+                    table,
+                    "unicode-form",
+                    unicode_form,
+                    vi.unicode_form == default_vi.unicode_form,
                 )
         });
 
@@ -575,6 +617,65 @@ accent = "#ff9e64"
         let text = saved(None, |s| s.vietnamese.enabled = true);
         assert!(text.contains("\nenabled = true\n"), "{text}");
         assert!(text.contains("# \"telex\": s f r x j"), "{text}");
+    }
+
+    #[test]
+    fn saves_auto_pair() {
+        let text = saved(Some("theme = \"dark\"\n"), |s| s.keys.auto_pair = true);
+        assert!(text.contains("[keys]\nauto-pair = true\n"), "{text}");
+
+        let text = saved(Some(&text), |s| s.keys.auto_pair = false);
+        assert!(text.contains("auto-pair = false"), "{text}");
+
+        let text = saved(None, |s| s.keys.auto_pair = true);
+        assert!(text.contains("\nauto-pair = true\n"), "{text}");
+        assert!(
+            text.contains("# Type the closing bracket or quote"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn saves_viqr_and_the_telex_options() {
+        use super_keyboard_core::InputMethod;
+        let text = saved(Some("theme = \"dark\"\n"), |s| {
+            s.vietnamese.method = InputMethod::Viqr;
+        });
+        assert!(text.contains("[vietnamese]\nmethod = \"viqr\"\n"), "{text}");
+        assert!(!text.contains("telex-"), "defaults are not added:\n{text}");
+
+        let text = saved(Some("theme = \"dark\"\n"), |s| {
+            s.vietnamese.telex_w = false;
+            s.vietnamese.telex_brackets = true;
+        });
+        assert!(
+            text.contains("[vietnamese]\ntelex-w = false\ntelex-brackets = true\n"),
+            "{text}"
+        );
+
+        let text = saved(None, |s| s.vietnamese.telex_brackets = true);
+        assert!(text.contains("\ntelex-w = true\n"), "{text}");
+        assert!(text.contains("\ntelex-brackets = true\n"), "{text}");
+        assert!(text.contains("# \"viqr\":"), "{text}");
+    }
+
+    #[test]
+    fn saves_the_unicode_form() {
+        use super_keyboard_core::UnicodeForm;
+        let text = saved(Some("theme = \"dark\"\n"), |s| {
+            s.vietnamese.unicode_form = UnicodeForm::Nfd;
+        });
+        assert!(
+            text.contains("[vietnamese]\nunicode-form = \"nfd\"\n"),
+            "{text}"
+        );
+
+        let text = saved(None, |s| s.vietnamese.unicode_form = UnicodeForm::Nfd);
+        assert!(text.contains("\nunicode-form = \"nfd\"\n"), "{text}");
+        assert!(
+            text.contains("# How letters with marks are written"),
+            "{text}"
+        );
     }
 
     #[test]

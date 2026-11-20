@@ -1,5 +1,5 @@
 //! Vietnamese letters as parts: a base letter, a shape mark and a tone, and the
-//! precomposed characters they make.
+//! characters they make, precomposed (NFC) or as a letter and its marks (NFD).
 
 /// The six tones of a Vietnamese syllable. Only one vowel of a syllable carries
 /// it; which one is decided by the whole syllable (see `Word::tone_position`).
@@ -48,6 +48,18 @@ pub enum Mark {
     Stroke,
 }
 
+/// The combining characters of the marks and tones, for decomposed output.
+mod combining {
+    pub const GRAVE: char = '\u{300}';
+    pub const ACUTE: char = '\u{301}';
+    pub const CIRCUMFLEX: char = '\u{302}';
+    pub const TILDE: char = '\u{303}';
+    pub const BREVE: char = '\u{306}';
+    pub const HOOK_ABOVE: char = '\u{309}';
+    pub const HORN: char = '\u{31b}';
+    pub const DOT_BELOW: char = '\u{323}';
+}
+
 /// Every Vietnamese vowel with its shape mark, and its six tones in [`Tone`]
 /// order.
 const VOWELS: [(char, Mark, [char; 6]); 12] = [
@@ -73,6 +85,51 @@ pub fn vowel_parts(c: char) -> Option<(char, Mark)> {
         .map(|&(base, mark, _)| (base, mark))
 }
 
+/// Appends `c` to `out` in Unicode's decomposed form (NFD): a marked vowel
+/// becomes its base letter followed by combining marks. Anything else,
+/// including `đ` (which Unicode does not decompose), is appended as it is.
+///
+/// The marks come in Unicode's canonical order: the horn, which is attached to
+/// the letter, then the dot below, then the marks above (circumflex or breve,
+/// and after it the tone).
+pub fn decompose(c: char, out: &mut String) {
+    let lower = c.to_lowercase().next().unwrap_or(c);
+    let found = VOWELS.iter().find_map(|&(base, mark, forms)| {
+        let tone = forms.iter().position(|&form| form == lower)?;
+        Some((base, mark, tone))
+    });
+    let Some((base, mark, tone)) = found else {
+        out.push(c);
+        return;
+    };
+    out.push(if c == lower {
+        base
+    } else {
+        base.to_ascii_uppercase()
+    });
+    let dot = tone == Tone::Dot.index();
+    if mark == Mark::Horn {
+        out.push(combining::HORN);
+    }
+    if dot {
+        out.push(combining::DOT_BELOW);
+    }
+    match mark {
+        Mark::Circumflex => out.push(combining::CIRCUMFLEX),
+        Mark::Breve => out.push(combining::BREVE),
+        Mark::None | Mark::Horn | Mark::Stroke => {}
+    }
+    let above = [
+        None,
+        Some(combining::ACUTE),
+        Some(combining::GRAVE),
+        Some(combining::HOOK_ABOVE),
+        Some(combining::TILDE),
+        None,
+    ];
+    out.extend(above[tone]);
+}
+
 /// One letter of the syllable being typed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Letter {
@@ -80,8 +137,10 @@ pub struct Letter {
     pub base: char,
     pub upper: bool,
     pub mark: Mark,
-    /// An `ư` made by a lone Telex `w`; typing `w` again turns it back into `w`.
-    pub from_w: bool,
+    /// The key that typed this letter whole: `w` for the `ư` of a lone Telex
+    /// `w`, `[` or `]` for the `ơ` or `ư` of a Telex bracket. Typing the key
+    /// again turns the letter back into the key.
+    pub made_by: Option<char>,
 }
 
 impl Letter {
@@ -91,7 +150,7 @@ impl Letter {
             base: key.to_ascii_lowercase(),
             upper: key.is_uppercase(),
             mark: Mark::None,
-            from_w: false,
+            made_by: None,
         }
     }
 
@@ -126,7 +185,7 @@ mod tests {
             base,
             upper,
             mark,
-            from_w: false,
+            made_by: None,
         }
     }
 
@@ -156,6 +215,32 @@ mod tests {
         assert_eq!(letter('d', Mark::Stroke, true).render(Tone::Acute), 'Đ');
         assert_eq!(Letter::typed('N').render(Tone::Dot), 'N');
         assert_eq!(Letter::typed('7').render(Tone::Level), '7');
+    }
+
+    #[test]
+    fn decomposes_every_vowel_as_unicode_nfd_does() {
+        use unicode_normalization::UnicodeNormalization;
+        for (_, _, forms) in VOWELS {
+            for lower in forms {
+                for c in [lower, lower.to_uppercase().next().unwrap()] {
+                    let mut ours = String::new();
+                    decompose(c, &mut ours);
+                    let nfd: String = c.nfd().collect();
+                    assert_eq!(ours, nfd, "{c}");
+                    assert_eq!(ours.nfc().collect::<String>(), c.to_string(), "{c}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn decomposing_leaves_other_characters_alone() {
+        // đ has no decomposition in Unicode: it is a letter of its own.
+        for c in ['đ', 'Đ', 'n', 'N', '7', ' '] {
+            let mut out = String::new();
+            decompose(c, &mut out);
+            assert_eq!(out, c.to_string());
+        }
     }
 
     #[test]

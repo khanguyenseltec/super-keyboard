@@ -170,6 +170,18 @@ mod tests {
     }
 
     #[test]
+    fn the_general_tab_offers_auto_pair() {
+        let html = render(|| {
+            use_context_provider(|| AppState::load(&AppEnv::isolated()));
+            rsx! { GeneralSettings {} }
+        });
+        assert!(
+            html.contains(r#"<label for="auto-pair-brackets-and-quotes">Auto-pair brackets and quotes</label>"#),
+            "{html}"
+        );
+    }
+
+    #[test]
     fn the_vietnamese_tab_shows_both_methods_and_their_rules() {
         let html = render(|| {
             use_context_provider(|| AppState::load(&AppEnv::isolated()));
@@ -180,12 +192,19 @@ mod tests {
             r#"role="switch" aria-checked=false"#,
             ">Telex</span>",
             ">VNI</span>",
+            ">VIQR</span>",
+            "A lone w types ư",
+            "[ and ] type ơ and ư",
             "Tiếng Việt</span>",
             "hòa khỏe thủy",
             "hoà khoẻ thuỷ",
             "Xin chào các bạn",
             "Không có gì quý hơn độc lập tự do",
             "Check spelling",
+            "Precomposed (NFC)",
+            "Decomposed (NFD)",
+            "Việt is 4 characters",
+            "Việt is 6 characters",
         ] {
             assert!(html.contains(text), "{text}: {html}");
         }

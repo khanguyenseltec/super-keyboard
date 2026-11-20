@@ -35,40 +35,54 @@ const VOWEL_GROUPS: [&str; 56] = [
     "oai", "oao", "oay", "oeo", "uây", "uôi", "uya", "uyê", "uyu", "ươi", "ươu", "yêu", "uêu",
 ];
 
-/// What a key does to a syllable, before it is checked.
+/// What a key does to a syllable, before it is checked. The keys with an
+/// effect are also the non-letters a syllable takes (`Composer::is_word_key`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Effect {
+pub(super) enum Effect {
     Tone(Tone),
-    /// Remove the tone (Telex `z`, VNI `0`).
+    /// Remove the tone (Telex `z`, VNI and VIQR `0`).
     ClearTone,
     /// â, ê, ô: on the given base vowel (Telex `aa`), or on any of a, e, o
-    /// (VNI `6`).
+    /// (VNI `6`, VIQR `^`).
     Circumflex(Option<char>),
-    /// ă (VNI `8`).
+    /// ă (VNI `8`, VIQR `(`).
     Breve,
-    /// ơ, ư (VNI `7`).
+    /// ơ, ư (VNI `7`, VIQR `+`).
     Horn,
-    /// Telex `w`: ơ, ư or ă, and `ư` on its own.
-    W,
+    /// Telex `w`: ơ, ư or ă, and, if `lone`, `ư` on its own.
+    W {
+        lone: bool,
+    },
+    /// Telex `[` and `]`: the letter ơ or ư, given by its base vowel.
+    Horned(char),
     /// đ.
     Stroke,
+    /// VIQR `\`: the next mark key is typed as itself (RFC 1456), as in
+    /// `kho^ng\?` for `không?`.
+    Escape,
 }
 
 impl Effect {
-    fn of(method: InputMethod, key: char) -> Option<Self> {
-        let effect = match (method, key.to_ascii_lowercase()) {
-            (InputMethod::Telex, 's') | (InputMethod::Vni, '1') => Self::Tone(Tone::Acute),
-            (InputMethod::Telex, 'f') | (InputMethod::Vni, '2') => Self::Tone(Tone::Grave),
-            (InputMethod::Telex, 'r') | (InputMethod::Vni, '3') => Self::Tone(Tone::Hook),
-            (InputMethod::Telex, 'x') | (InputMethod::Vni, '4') => Self::Tone(Tone::Tilde),
-            (InputMethod::Telex, 'j') | (InputMethod::Vni, '5') => Self::Tone(Tone::Dot),
-            (InputMethod::Telex, 'z') | (InputMethod::Vni, '0') => Self::ClearTone,
-            (InputMethod::Telex, c @ ('a' | 'e' | 'o')) => Self::Circumflex(Some(c)),
-            (InputMethod::Vni, '6') => Self::Circumflex(None),
-            (InputMethod::Vni, '7') => Self::Horn,
-            (InputMethod::Vni, '8') => Self::Breve,
-            (InputMethod::Telex, 'w') => Self::W,
-            (InputMethod::Telex, 'd') | (InputMethod::Vni, '9') => Self::Stroke,
+    pub(super) fn of(options: &VietnameseOptions, key: char) -> Option<Self> {
+        use InputMethod::{Telex, Viqr, Vni};
+        let effect = match (options.method, key.to_ascii_lowercase()) {
+            (Telex, 's') | (Vni, '1') | (Viqr, '\'') => Self::Tone(Tone::Acute),
+            (Telex, 'f') | (Vni, '2') | (Viqr, '`') => Self::Tone(Tone::Grave),
+            (Telex, 'r') | (Vni, '3') | (Viqr, '?') => Self::Tone(Tone::Hook),
+            (Telex, 'x') | (Vni, '4') | (Viqr, '~') => Self::Tone(Tone::Tilde),
+            (Telex, 'j') | (Vni, '5') | (Viqr, '.') => Self::Tone(Tone::Dot),
+            (Telex, 'z') | (Vni | Viqr, '0') => Self::ClearTone,
+            (Telex, c @ ('a' | 'e' | 'o')) => Self::Circumflex(Some(c)),
+            (Vni, '6') | (Viqr, '^') => Self::Circumflex(None),
+            (Vni, '7') | (Viqr, '+') => Self::Horn,
+            (Vni, '8') | (Viqr, '(') => Self::Breve,
+            (Telex, 'w') => Self::W {
+                lone: options.telex_w,
+            },
+            (Telex, '[') if options.telex_brackets => Self::Horned('o'),
+            (Telex, ']') if options.telex_brackets => Self::Horned('u'),
+            (Telex | Viqr, 'd') | (Vni, '9') => Self::Stroke,
+            (Viqr, '\\') => Self::Escape,
             _ => return None,
         };
         Some(effect)
@@ -85,6 +99,11 @@ enum Outcome {
     /// The key took off a mark that stood for the key itself (`ww` is `w`):
     /// nothing more is typed, and the syllable stops changing.
     Reverted,
+    /// VIQR: the key is punctuation after a syllable that already has its tone
+    /// (`Vie^.t.` is `Việt.`): it is typed, and the syllable stops changing.
+    Literal,
+    /// VIQR `\`: it shows until the next key, which it may turn into itself.
+    Escape,
     /// The key has nothing to change here and is typed as itself.
     NotApplicable,
 }
@@ -96,6 +115,22 @@ pub(super) struct Word {
     tone: Tone,
     /// Set after an undo, so `ass` stays `as` and `class` stays `class`.
     frozen: bool,
+    /// The keys typed into the syllable, to put it back as typed.
+    keys: Vec<char>,
+    /// The syllable as it was before the last key that is not a letter (VIQR
+    /// punctuation, a Telex bracket) marked it. If a later letter makes the
+    /// syllable impossible in Vietnamese, that mark is undone and the key typed
+    /// as itself, with the keys after it: `don't`, `ma.com`, `m[k]`,
+    /// `tie^'ng.txt`.
+    before_punctuation: Option<Box<Word>>,
+    /// `keys` no longer spell what is shown (after Backspace, an undone key
+    /// or `[[`), so putting the word back would lose or repeat letters.
+    keys_stale: bool,
+    /// VIQR: the key that changed the tone with the last key, and the tone
+    /// before it, so the same key at once takes it back (`ba.n??` is `bạn?`).
+    tone_by: Option<(char, Tone)>,
+    /// VIQR: the last key was `\`.
+    escaped: bool,
 }
 
 impl Word {
@@ -128,36 +163,114 @@ impl Word {
     /// with it; otherwise the tone stays and may move (`hoàn` ⌫ is `hòa`).
     pub fn pop(&mut self, style: ToneStyle) {
         let at = self.tone_position(style);
+        // A plain letter typed as its own key (`dom` ⌫) keeps the keys in
+        // step; Backspace over a mark or a tone does not.
+        let in_step = !self.keys_stale
+            && self.letters.last().copied() == self.keys.last().map(|&k| Letter::typed(k))
+            && at != Some(self.letters.len().saturating_sub(1));
         self.letters.pop();
         if at == Some(self.letters.len()) {
             self.tone = Tone::Level;
         }
         self.frozen = false;
+        if in_step {
+            self.keys.pop();
+        } else {
+            self.keys_stale = true;
+        }
+        self.tone_by = None;
+        self.escaped = false;
+        self.drop_stray_tone();
         if self.letters.is_empty() {
             self.clear();
         }
     }
 
-    /// Adds a typed key: a mark, a tone or a letter. Returns false for a VNI
-    /// digit that has nothing to change, which is then typed as a plain digit
-    /// outside the syllable.
+    /// Turns the letter at `i`, which a key made whole (`ư` from `w`, `ơ` from
+    /// `[`), back into that key. Its tone goes with it; another vowel's stays.
+    fn revert_made_letter(&mut self, i: usize, key: char) {
+        // A made letter has a shape mark, so it carries the tone in any style.
+        if self.tone_position(ToneStyle::Classic) == Some(i) {
+            self.tone = Tone::Level;
+        }
+        self.letters[i] = Letter::typed(key);
+    }
+
+    /// A tone with no vowel left to carry it (after a revert or Backspace)
+    /// must not come back on the next vowel: `th[f[` ⌫ `a` is `tha`.
+    fn drop_stray_tone(&mut self) {
+        if self.vowels().is_none() {
+            self.tone = Tone::Level;
+        }
+    }
+
+    /// Adds a typed key: a mark, a tone or a letter. Returns false for a key
+    /// that is not a letter and has nothing to change (a VNI digit, VIQR
+    /// punctuation, a Telex bracket), which is then typed as itself outside
+    /// the syllable.
     pub fn push_key(&mut self, key: char, options: &VietnameseOptions) -> bool {
+        // Only the very next key can take back a VIQR tone.
+        let tone_by = self.tone_by.take();
+        if std::mem::take(&mut self.escaped) {
+            // `\?` is `?`, in place of the `\` shown: a punctuation mark key
+            // after a syllable it could mark. `C:\dev`, `\(x\)` and `x\+y`
+            // keep their backslash.
+            let mut without = self.clone();
+            without.letters.pop();
+            without.keys.pop();
+            let mark_key =
+                key == '\\' || (!key.is_ascii_alphanumeric() && Effect::of(options, key).is_some());
+            // After a finished syllable, or one that can be Vietnamese:
+            // `example\.com` and `\\server` keep their backslashes.
+            let syllable = without.frozen
+                || (without.vowels().is_some() && (!options.check_spelling || without.is_valid()));
+            if mark_key && syllable {
+                *self = without;
+                return self.push_literal(key);
+            }
+            // A backslash that stays means this is not a syllable.
+            self.frozen = true;
+        }
+        if self.frozen && Effect::of(options, key) == Some(Effect::Escape) {
+            // `kho^ng\?\?`: an escape works after a finished syllable too.
+            self.letters.push(Letter::typed(key));
+            self.keys.push(key);
+            self.escaped = true;
+            return true;
+        }
         if !self.frozen
-            && let Some(effect) = Effect::of(options.method, key)
+            && let Some(effect) = Effect::of(options, key)
         {
             let before = self.clone();
-            match self.apply(effect, key) {
+            let viqr = options.method == InputMethod::Viqr;
+            match self.apply(effect, key, viqr, tone_by) {
                 Outcome::Applied if options.check_spelling && !self.is_valid() => {
                     *self = before;
                 }
-                Outcome::Applied => return true,
-                Outcome::Undone => {
-                    self.letters.push(Letter::typed(key));
-                    self.frozen = true;
+                Outcome::Applied => {
+                    if (viqr && !key.is_ascii_alphabetic()) || matches!(effect, Effect::Horned(_)) {
+                        self.before_punctuation = Some(Box::new(before));
+                    }
+                    self.keys.push(key);
                     return true;
+                }
+                Outcome::Literal => return self.push_literal(key),
+                Outcome::Undone => {
+                    // Two keys, one shown: `ba''` is `ba'`.
+                    self.keys_stale = true;
+                    return self.push_literal(key);
                 }
                 Outcome::Reverted => {
                     self.frozen = true;
+                    self.keys.push(key);
+                    self.keys_stale = true;
+                    self.drop_stray_tone();
+                    return true;
+                }
+                Outcome::Escape => {
+                    self.letters.push(Letter::typed(key));
+                    self.keys.push(key);
+                    self.escaped = true;
                     return true;
                 }
                 Outcome::NotApplicable => {}
@@ -167,16 +280,64 @@ impl Word {
             return false;
         }
         self.letters.push(Letter::typed(key));
+        self.keys.push(key);
+        if options.check_spelling
+            && !self.keys_stale
+            && !self.is_valid()
+            && let Some(before) = self.before_punctuation.take()
+        {
+            // Not Vietnamese after all (`don't`): undo the punctuation's mark
+            // and type it, and the keys after it, as themselves.
+            let typed_after = self.keys[before.keys.len()..].to_vec();
+            *self = *before;
+            for key in typed_after {
+                self.letters.push(Letter::typed(key));
+                self.keys.push(key);
+            }
+            self.frozen = true;
+            self.before_punctuation = None;
+        }
         true
     }
 
-    fn apply(&mut self, effect: Effect, key: char) -> Outcome {
+    /// Types `key` as itself; the syllable stops changing. Punctuation typed
+    /// after a syllable is kept with it: `Vie^.t.vn` is `Việt.vn`, not put back.
+    fn push_literal(&mut self, key: char) -> bool {
+        self.letters.push(Letter::typed(key));
+        self.keys.push(key);
+        self.frozen = true;
+        self.before_punctuation = None;
+        true
+    }
+
+    /// `tone_by` is the key that changed the tone with the previous key, and
+    /// the tone before it.
+    fn apply(
+        &mut self,
+        effect: Effect,
+        key: char,
+        viqr: bool,
+        tone_by: Option<(char, Tone)>,
+    ) -> Outcome {
         let vowels = self.vowels();
         match effect {
+            Effect::Tone(_) if vowels.is_none() => Outcome::NotApplicable,
+            // VIQR tone keys are punctuation too. The same key again at once
+            // takes its tone back and is typed (`ba.n??` is `bạn?`); a tone the
+            // syllable already has makes the key punctuation (`Vie^.t.` is
+            // `Việt.`).
+            Effect::Tone(_) if viqr && tone_by.is_some_and(|(by, _)| by == key) => {
+                self.tone = tone_by.map_or(Tone::Level, |(_, previous)| previous);
+                Outcome::Undone
+            }
+            Effect::Tone(tone) if viqr && self.tone == tone => Outcome::Literal,
+            Effect::Tone(tone) if viqr => {
+                self.tone_by = Some((key, self.tone));
+                self.tone = tone;
+                Outcome::Applied
+            }
             Effect::Tone(tone) => {
-                if vowels.is_none() {
-                    Outcome::NotApplicable
-                } else if self.tone == tone {
+                if self.tone == tone {
                     self.tone = Tone::Level;
                     Outcome::Undone
                 } else {
@@ -205,19 +366,43 @@ impl Word {
                 };
                 self.toggle_mark(vowels, Mark::Breve, |l| l.base == 'a')
             }
-            Effect::Horn | Effect::W => match vowels {
-                Some(vowels) => self.horn(vowels, effect == Effect::W),
-                None if effect == Effect::W => {
+            Effect::Horn | Effect::W { .. } => match vowels {
+                Some(vowels) => self.horn(vowels, matches!(effect, Effect::W { .. })),
+                None if effect == (Effect::W { lone: true }) => {
                     // A lone Telex `w` is `ư`: `w` is "ư", `nhw` is "như".
                     self.letters.push(Letter {
                         mark: Mark::Horn,
-                        from_w: true,
+                        made_by: Some('w'),
                         ..Letter::typed(if key.is_uppercase() { 'U' } else { 'u' })
                     });
                     Outcome::Applied
                 }
                 None => Outcome::NotApplicable,
             },
+            Effect::Horned(base) => match self.letters.last().map(|l| l.made_by) {
+                // `[[` is `[`: the letter the bracket made turns back into it,
+                // taking its tone with it (`thu[r[` is `thu[`).
+                Some(made_by) if made_by == Some(key) => {
+                    self.revert_made_letter(self.letters.len() - 1, key);
+                    Outcome::Reverted
+                }
+                _ => {
+                    // Brackets have no capitals: an all-capital word gets one
+                    // (`NG][IF` is `NGƯỜI`), a single capital does not (`T[` is `Tơ`).
+                    let upper = self.letters.len() >= 2 && self.letters.iter().all(|l| l.upper);
+                    self.letters.push(Letter {
+                        mark: Mark::Horn,
+                        made_by: Some(key),
+                        ..Letter::typed(if upper {
+                            base.to_ascii_uppercase()
+                        } else {
+                            base
+                        })
+                    });
+                    Outcome::Applied
+                }
+            },
+            Effect::Escape => Outcome::Escape,
             Effect::Stroke => match self.letters.first_mut() {
                 Some(first) if first.base == 'd' && first.mark == Mark::Stroke => {
                     first.mark = Mark::None;
@@ -257,12 +442,11 @@ impl Word {
     }
 
     /// The horn (and, for Telex `w`, the breve): `uo` is `ươ`, `ua` is `ưa`,
-    /// then `ă`, `ơ` or `ư`. A second `w` or `7` takes them off.
-    fn horn(&mut self, vowels: Range<usize>, telex_w: bool) -> Outcome {
+    /// then `ă`, `ơ` or `ư`. A second `w`, `7` or `+` takes them off.
+    fn horn(&mut self, vowels: Range<usize>, w_key: bool) -> Outcome {
         let has_final = vowels.end < self.letters.len();
-        let horned = |l: &Letter| {
-            l.mark == Mark::Horn || (telex_w && l.mark == Mark::Breve && l.base == 'a')
-        };
+        let horned =
+            |l: &Letter| l.mark == Mark::Horn || (w_key && l.mark == Mark::Breve && l.base == 'a');
         // `ưo` and `uơ` become `ươ` (`nguwow`), before a second key undoes.
         let pair = self.letters[vowels.clone()]
             .windows(2)
@@ -277,8 +461,13 @@ impl Word {
         }
         if self.letters[vowels.clone()].iter().any(horned) {
             // `ww` is `w`: the `ư` a lone `w` made turns back into the `w`.
-            if let Some(made) = self.letters.iter_mut().find(|l| l.from_w) {
-                *made = Letter::typed(if made.upper { 'W' } else { 'w' });
+            if let Some(i) = self
+                .letters
+                .iter()
+                .position(|l| w_key && l.made_by == Some('w'))
+            {
+                let w = if self.letters[i].upper { 'W' } else { 'w' };
+                self.revert_made_letter(i, w);
                 return Outcome::Reverted;
             }
             for letter in &mut self.letters[vowels] {
@@ -297,7 +486,7 @@ impl Word {
         let mut set = |i: usize, mark: Mark| self.letters[start + i].mark = mark;
         if bases == ['u', 'a'] && !has_final {
             set(0, Mark::Horn);
-        } else if let Some(i) = bases.iter().rposition(|&b| b == 'a').filter(|_| telex_w) {
+        } else if let Some(i) = bases.iter().rposition(|&b| b == 'a').filter(|_| w_key) {
             set(i, Mark::Breve);
         } else if let Some(i) = bases.iter().rposition(|&b| b == 'o') {
             set(i, Mark::Horn);
@@ -336,7 +525,11 @@ impl Word {
         if let Some(i) = group.iter().rposition(|l| l.mark != Mark::None) {
             return Some(vowels.start + i);
         }
-        let has_final = vowels.end < self.letters.len();
+        // The final is the letters right after the vowels; punctuation typed
+        // after the syllable (`Kho?e?`, `Kho?e?n`) ends it.
+        let has_final = self.letters[vowels.end..]
+            .first()
+            .is_some_and(|l| l.base.is_ascii_alphabetic());
         let offset = match group.len() {
             1 => 0,
             _ if has_final => group.len() - 1,

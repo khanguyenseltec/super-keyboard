@@ -195,8 +195,10 @@ impl Engine {
         let checked = state == 1;
         let changed = match name.as_str() {
             "InputMode" => self.shared.update(|o| o.enabled = !o.enabled),
-            "Method.telex" if checked => self.shared.update(|o| o.method = InputMethod::Telex),
-            "Method.vni" if checked => self.shared.update(|o| o.method = InputMethod::Vni),
+            key if key.starts_with("Method.") => match method_of(key) {
+                Some(method) if checked => self.shared.update(|o| o.method = method),
+                _ => return,
+            },
             "Tone.classic" if checked => self.shared.update(|o| o.tone_style = ToneStyle::Classic),
             "Tone.modern" if checked => self.shared.update(|o| o.tone_style = ToneStyle::Modern),
             "CheckSpelling" => self.shared.update(|o| o.check_spelling = checked),
@@ -314,15 +316,15 @@ fn menu(options: VietnameseOptions) -> Vec<Prop> {
         ..Prop::new(key, PropKind::Radio, label)
     };
     let separator = |key: &str| Prop::new(key, PropKind::Separator, "");
-    vec![
-        mode,
-        separator("Separator.method"),
+    let mut items = vec![mode, separator("Separator.method")];
+    items.extend(InputMethod::ALL.map(|method| {
         radio(
-            "Method.telex",
-            "Telex",
-            options.method == InputMethod::Telex,
-        ),
-        radio("Method.vni", "VNI", options.method == InputMethod::Vni),
+            &format!("Method.{}", method.name()),
+            method.label(),
+            options.method == method,
+        )
+    }));
+    items.extend([
         separator("Separator.tone"),
         radio(
             "Tone.classic",
@@ -340,7 +342,13 @@ fn menu(options: VietnameseOptions) -> Vec<Prop> {
             ..Prop::new("CheckSpelling", PropKind::Toggle, "Check spelling")
         },
         Prop::new("Setup", PropKind::Normal, "Open Super Keyboard…"),
-    ]
+    ]);
+    items
+}
+
+/// The method a `Method.<name>` menu entry stands for.
+fn method_of(key: &str) -> Option<InputMethod> {
+    key.strip_prefix("Method.").and_then(InputMethod::from_name)
 }
 
 /// Opens the Super Keyboard app, for its Tiếng Việt settings.
@@ -374,5 +382,21 @@ mod tests {
             .collect();
         assert_eq!(checked, ["Method.vni", "Tone.classic", "CheckSpelling"]);
         assert_eq!(menu(VietnameseOptions::default())[0].symbol, "EN");
+    }
+
+    #[test]
+    fn the_menu_offers_every_method() {
+        for method in InputMethod::ALL {
+            let items = menu(VietnameseOptions {
+                method,
+                ..VietnameseOptions::default()
+            });
+            let key = format!("Method.{}", method.name());
+            let item = items.iter().find(|p| p.key == key);
+            assert!(item.is_some_and(|p| p.checked), "{key}");
+            assert_eq!(method_of(&key), Some(method));
+        }
+        assert_eq!(method_of("Method.unikey"), None);
+        assert_eq!(method_of("Tone.classic"), None);
     }
 }

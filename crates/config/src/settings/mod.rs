@@ -13,6 +13,7 @@
 //! repeat-rate = 30      # repeats per second
 //! swipe-step = 12       # pixels of drag per cursor step on the space bar
 //! height = 52           # key height in pixels; leave out to fit the screen
+//! auto-pair = true      # typing ( [ { " ' ` types the closer too
 //!
 //! [keyboard]
 //! width = 80            # percent of the window width; leave out for the full width
@@ -24,9 +25,12 @@
 //!
 //! [vietnamese]
 //! enabled = true        # type Vietnamese with the keys
-//! method = "telex"      # "telex" or "vni"
+//! method = "telex"      # "telex", "vni" or "viqr"
 //! tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
 //! check-spelling = true # only change syllables that can be Vietnamese
+//! telex-w = true        # Telex: a w with no vowel to mark types ư
+//! telex-brackets = false # Telex: [ and ] type ơ and ư
+//! unicode-form = "nfc"  # "nfc" (ệ is one character) or "nfd" (e and its marks)
 //!
 //! [style.dark]
 //! accent = "#ff9e64"
@@ -66,7 +70,7 @@ pub struct Settings {
     pub keys: KeySettings,
     pub keyboard: KeyboardSettings,
     pub preview: PreviewSettings,
-    /// Telex or VNI typing: `[vietnamese]`.
+    /// Telex, VNI or VIQR typing: `[vietnamese]`.
     pub vietnamese: VietnameseOptions,
     pub style: Style,
     /// The order of the profile menu, and which profiles it hides.
@@ -207,6 +211,9 @@ pub struct KeySettings {
     pub swipe_step_px: u32,
     /// Key height in pixels; `None` sizes keys to the screen.
     pub height_px: Option<u32>,
+    /// Typing an opening bracket or quote types its closer too, with the
+    /// cursor between them.
+    pub auto_pair: bool,
 }
 
 impl KeySettings {
@@ -259,6 +266,7 @@ impl Default for KeySettings {
             repeat_rate: Self::REPEAT_RATE.default,
             swipe_step_px: Self::SWIPE_STEP_PX.default,
             height_px: None,
+            auto_pair: false,
         }
     }
 }
@@ -347,7 +355,7 @@ impl Default for PreviewSettings {
 mod tests {
     use super::*;
     use crate::style::{StyleValue, StyleVar, ValueKind};
-    use super_keyboard_core::{InputMethod, ToneStyle};
+    use super_keyboard_core::{InputMethod, ToneStyle, UnicodeForm};
 
     #[test]
     fn empty_file_is_the_defaults() {
@@ -376,6 +384,7 @@ mod tests {
             repeat-rate = 20
             swipe-step = 8
             height = 56
+            auto-pair = true
             [keyboard]
             width = 75
             height = 100
@@ -387,6 +396,9 @@ mod tests {
             method = "vni"
             tone-style = "modern"
             check-spelling = false
+            telex-w = false
+            telex-brackets = true
+            unicode-form = "nfd"
             [style]
             radius = "10px"
             [style.dark]
@@ -423,6 +435,7 @@ mod tests {
                 repeat_rate: 20,
                 swipe_step_px: 8,
                 height_px: Some(56),
+                auto_pair: true,
             }
         );
         assert!(!settings.preview.show_log);
@@ -433,6 +446,9 @@ mod tests {
                 method: InputMethod::Vni,
                 tone_style: ToneStyle::Modern,
                 check_spelling: false,
+                telex_w: false,
+                telex_brackets: true,
+                unicode_form: UnicodeForm::Nfd,
             }
         );
         let value = |kind, v: &str| StyleValue::parse(kind, v).unwrap();
@@ -449,6 +465,15 @@ mod tests {
         let config = settings.keys.gesture_config();
         assert_eq!(config.repeat_interval, Duration::from_millis(50));
         assert_eq!(config.swipe_slop, 8.0);
+    }
+
+    #[test]
+    fn auto_pair_is_off_unless_asked_for() {
+        assert!(!Settings::default().keys.auto_pair);
+        let settings = Settings::from_toml("[keys]\nauto-pair = true").unwrap();
+        assert!(settings.keys.auto_pair);
+        let err = Settings::from_toml("[keys]\nauto-pair = \"yes\"").unwrap_err();
+        assert!(err.to_string().contains("invalid type"), "{err}");
     }
 
     #[test]
