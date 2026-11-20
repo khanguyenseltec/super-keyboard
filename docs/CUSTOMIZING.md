@@ -121,7 +121,8 @@ between them: `(` types `()`, and likewise for `[`, `{`, `"`, `'` and `` ` ``.
 
 - **Typing the closer steps over it**, so `(x)` typed out of habit is `(x)`, not `(x))`.
 - **Backspace right after an opener removes both halves.**
-- **A quote after a letter or digit is typed alone**: `don't` stays `don't`.
+- **A quote after a letter or digit is typed alone**: `don't` stays `don't`. A tone mark
+  counts as part of the letter it is on, so `cá'` is not paired either.
 - Only a single typed character pairs. Keys that insert longer text (`$(`, `${`) and
   chords such as `Ctrl+(` are not changed.
 - The keyboard cannot see the text it types into, so it remembers a pair only until the

@@ -24,7 +24,7 @@ const DOTTED_CIRCLE: char = '\u{25cc}';
 
 /// Whether `c` is in Unicode's Combining Diacritical Marks block, where the
 /// Vietnamese tone marks are.
-fn is_combining_mark(c: char) -> bool {
+pub(crate) fn is_combining_mark(c: char) -> bool {
     ('\u{300}'..='\u{36f}').contains(&c)
 }
 
