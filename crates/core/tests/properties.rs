@@ -434,6 +434,7 @@ proptest! {
         check_spelling in any::<bool>(),
         telex_w in any::<bool>(),
         telex_brackets in any::<bool>(),
+        nfd in any::<bool>(),
     ) {
         let mut composer = Composer::new(VietnameseOptions {
             enabled: true,
@@ -442,6 +443,7 @@ proptest! {
             check_spelling,
             telex_w,
             telex_brackets,
+            unicode_form: if nfd { UnicodeForm::Nfd } else { UnicodeForm::Nfc },
         });
         let mut sink = PreviewSink::default();
         sink.emit(Output::Text("> ".into()));

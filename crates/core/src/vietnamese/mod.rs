@@ -157,6 +157,8 @@ pub struct VietnameseOptions {
     pub telex_w: bool,
     /// Telex: `[` types `ơ` and `]` types `ư`.
     pub telex_brackets: bool,
+    /// Write letters with marks precomposed or decomposed.
+    pub unicode_form: UnicodeForm,
 }
 
 impl Default for VietnameseOptions {
@@ -168,6 +170,7 @@ impl Default for VietnameseOptions {
             check_spelling: true,
             telex_w: true,
             telex_brackets: false,
+            unicode_form: UnicodeForm::default(),
         }
     }
 }

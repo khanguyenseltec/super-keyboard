@@ -85,6 +85,7 @@ struct VietnameseFile {
     check_spelling: Option<bool>,
     telex_w: Option<bool>,
     telex_brackets: Option<bool>,
+    unicode_form: Option<String>,
 }
 
 impl VietnameseFile {
@@ -107,6 +108,12 @@ impl VietnameseFile {
             check_spelling: self.check_spelling.unwrap_or(defaults.check_spelling),
             telex_w: self.telex_w.unwrap_or(defaults.telex_w),
             telex_brackets: self.telex_brackets.unwrap_or(defaults.telex_brackets),
+            unicode_form: match self.unicode_form {
+                None => defaults.unicode_form,
+                Some(name) => {
+                    UnicodeForm::from_name(&name).ok_or(SettingsError::UnknownUnicodeForm(name))?
+                }
+            },
         })
     }
 }

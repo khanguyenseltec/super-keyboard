@@ -89,6 +89,7 @@ tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
 check-spelling = true # only change syllables that can be Vietnamese
 telex-w = true        # Telex: a w with no vowel to mark types ư ("tw" is "tư")
 telex-brackets = false # Telex: [ types ơ and ] types ư
+unicode-form = "nfc"  # "nfc" (ệ is one character) or "nfd" (e and its marks)
 
 [style]               # changes to every theme
 radius = "8px"
@@ -339,10 +340,6 @@ A hidden profile still works if `profile` names it; the menu shows it while it i
 
 Super Keyboard types Vietnamese with **Telex**, **VNI** or **VIQR**, the standard ways
 of adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
-or open **settings → Tiếng Việt** for the method, tone placement, spelling check and a
-box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
-Super Keyboard types Vietnamese with **Telex** or **VNI**, the two standard ways of
-adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
 or open **settings → Tiếng Việt** for the method, tone placement, spelling check,
 Unicode form and a box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
 match what the keys do.

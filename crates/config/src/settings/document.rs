@@ -97,6 +97,11 @@ check-spelling = true
 telex-w = true
 # Telex: [ types ơ and ] types ư. Typing the bracket twice types the bracket.
 telex-brackets = false
+# How letters with marks are written in Unicode: "nfc" as one character each
+# (ệ), which is what almost every app expects; or "nfd" as the plain letter
+# followed by its marks as characters of their own (e, dot below, circumflex),
+# for the rare app that needs that.
+unicode-form = "nfc"
 
 # Changes to the theme: for every theme, then for dark or light themes only.
 # Values are CSS colours (#7aa2f7, rgb(...), oklch(...), colour names), lengths
@@ -246,6 +251,12 @@ impl SettingsDocument {
                     "telex-brackets",
                     Scalar::Bool(vi.telex_brackets),
                     vi.telex_brackets == default_vi.telex_brackets,
+                )
+                | set(
+                    table,
+                    "unicode-form",
+                    unicode_form,
+                    vi.unicode_form == default_vi.unicode_form,
                 )
         });
 
@@ -619,6 +630,25 @@ accent = "#ff9e64"
         assert!(text.contains("\ntelex-w = true\n"), "{text}");
         assert!(text.contains("\ntelex-brackets = true\n"), "{text}");
         assert!(text.contains("# \"viqr\":"), "{text}");
+    }
+
+    #[test]
+    fn saves_the_unicode_form() {
+        use super_keyboard_core::UnicodeForm;
+        let text = saved(Some("theme = \"dark\"\n"), |s| {
+            s.vietnamese.unicode_form = UnicodeForm::Nfd;
+        });
+        assert!(
+            text.contains("[vietnamese]\nunicode-form = \"nfd\"\n"),
+            "{text}"
+        );
+
+        let text = saved(None, |s| s.vietnamese.unicode_form = UnicodeForm::Nfd);
+        assert!(text.contains("\nunicode-form = \"nfd\"\n"), "{text}");
+        assert!(
+            text.contains("# How letters with marks are written"),
+            "{text}"
+        );
     }
 
     #[test]

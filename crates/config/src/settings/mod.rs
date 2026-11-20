@@ -29,6 +29,7 @@
 //! check-spelling = true # only change syllables that can be Vietnamese
 //! telex-w = true        # Telex: a w with no vowel to mark types ư
 //! telex-brackets = false # Telex: [ and ] type ơ and ư
+//! unicode-form = "nfc"  # "nfc" (ệ is one character) or "nfd" (e and its marks)
 //!
 //! [style.dark]
 //! accent = "#ff9e64"
@@ -391,6 +392,7 @@ mod tests {
             check-spelling = false
             telex-w = false
             telex-brackets = true
+            unicode-form = "nfd"
             [style]
             radius = "10px"
             [style.dark]
@@ -439,6 +441,7 @@ mod tests {
                 check_spelling: false,
                 telex_w: false,
                 telex_brackets: true,
+                unicode_form: UnicodeForm::Nfd,
             }
         );
         let value = |kind, v: &str| StyleValue::parse(kind, v).unwrap();

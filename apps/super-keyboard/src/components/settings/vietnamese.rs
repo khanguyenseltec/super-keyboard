@@ -1,5 +1,5 @@
 //! The Vietnamese tab: the on/off switch, Telex, VNI or VIQR, tone placement,
-//! spelling, the Telex options, and a box to try keys in.
+//! spelling, the Unicode form, the Telex options, and a box to try keys in.
 //!
 //! Every result shown (`aa` → `â`) is typed by the engine as the tab renders,
 //! so the cheat sheets always match what the keyboard does.
@@ -405,6 +405,27 @@ fn tone_sample(options: VietnameseOptions, style: ToneStyle) -> String {
     transliterate("hoaf khoer thuyr", options)
 }
 
+/// `Việt is 4 characters` or `Việt is 6 characters`: how many code points
+/// the engine writes for the word in `form`.
+fn unicode_sample(options: VietnameseOptions, form: UnicodeForm) -> String {
+    let options = VietnameseOptions {
+        method: InputMethod::Telex,
+        unicode_form: form,
+        ..options
+    };
+    let word = transliterate("Vieejt", options);
+    let count = word.chars().count();
+    // Shown precomposed either way, so the label reads the same in both.
+    let shown = transliterate(
+        "Vieejt",
+        VietnameseOptions {
+            unicode_form: UnicodeForm::Nfc,
+            ..options
+        },
+    );
+    format!("{shown} is {count} characters")
+}
+
 /// `ass → as`, `a11 → a1` or `a'' → a'`.
 fn undo_sample(method: InputMethod) -> &'static str {
     match method {
@@ -465,6 +486,24 @@ mod tests {
     }
 
     #[test]
+    fn unicode_samples_count_what_the_engine_writes() {
+        let vni = VietnameseOptions {
+            method: InputMethod::Vni,
+            ..VietnameseOptions::default()
+        };
+        for options in [VietnameseOptions::default(), vni] {
+            assert_eq!(
+                unicode_sample(options, UnicodeForm::Nfc),
+                "Việt is 4 characters"
+            );
+            assert_eq!(
+                unicode_sample(options, UnicodeForm::Nfd),
+                "Việt is 6 characters"
+            );
+        }
+    }
+
+    #[test]
     fn examples_type_the_same_phrases_in_every_method() {
         let telex = VietnameseOptions::default();
         for method in InputMethod::ALL {
@@ -505,6 +544,7 @@ mod tests {
                 check_spelling: false,
                 telex_w: false,
                 telex_brackets: true,
+                unicode_form: UnicodeForm::Nfd,
             },
             ..Settings::default()
         };
