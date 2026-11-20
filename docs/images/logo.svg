@@ -1,22 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Super Keyboard">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Super Keyboard">
+  <!-- Super Keyboard mark: a keycap, braces for code, a cursor for typing. -->
   <defs>
-    <linearGradient id="rim" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+    <linearGradient id="rim" x1="40" y1="40" x2="472" y2="472" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#7aa2f7"/>
       <stop offset="1" stop-color="#bb9af7"/>
     </linearGradient>
-    <linearGradient id="face" x1="0" y1="12" x2="0" y2="102" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2a2f45"/>
+    <linearGradient id="shade" x1="0" y1="40" x2="0" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0.55" stop-color="#16161e" stop-opacity="0"/>
+      <stop offset="1" stop-color="#16161e" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="62" x2="0" y2="406" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2f3553"/>
       <stop offset="1" stop-color="#1a1b26"/>
     </linearGradient>
-    <linearGradient id="glyph" x1="34" y1="30" x2="94" y2="84" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9ab8ff"/>
-      <stop offset="1" stop-color="#d2b6ff"/>
+    <linearGradient id="glyph" x1="150" y1="132" x2="362" y2="324" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a9c1ff"/>
+      <stop offset="1" stop-color="#dcc4ff"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#rim)"/>
-  <rect x="15" y="11" width="98" height="92" rx="21" fill="url(#face)"/>
-  <g fill="none" stroke="url(#glyph)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M53 33c-8 0-10.5 3-10.5 10v7.5c0 4.2-2.3 6.5-7.5 6.5 5.2 0 7.5 2.3 7.5 6.5V71c0 7 2.5 10 10.5 10"/>
-    <path d="M75 33c8 0 10.5 3 10.5 10v7.5c0 4.2 2.3 6.5 7.5 6.5-5.2 0-7.5 2.3-7.5 6.5V71c0 7-2.5 10-10.5 10"/>
+  <rect x="40" y="40" width="432" height="432" rx="108" fill="url(#rim)"/>
+  <rect x="40" y="40" width="432" height="432" rx="108" fill="url(#shade)"/>
+  <rect x="76" y="62" width="360" height="344" rx="82" fill="url(#face)"/>
+  <rect x="77.5" y="63.5" width="357" height="341" rx="80.5" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="3"/>
+  <g fill="none" stroke="url(#glyph)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M206 140c-30 0-40 11-40 38v26c0 16-9 24-29 24 20 0 29 8 29 24v26c0 27 10 38 40 38"/>
+    <path d="M306 140c30 0 40 11 40 38v26c0 16 9 24 29 24-20 0-29 8-29 24v26c0 27-10 38-40 38"/>
   </g>
+  <rect x="242" y="172" width="28" height="112" rx="14" fill="#ff9e64"/>
 </svg>

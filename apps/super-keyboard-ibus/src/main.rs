@@ -84,7 +84,8 @@ fn component(exec: String) -> Component {
             language: "vi",
             license: "MIT OR Apache-2.0",
             author: "Super Keyboard contributors",
-            icon: "input-keyboard".to_owned(),
+            // Installed by the .deb into the hicolor icon theme.
+            icon: "super-keyboard".to_owned(),
             layout: "us",
             symbol: "VI",
             setup: "/usr/bin/super-keyboard".to_owned(),

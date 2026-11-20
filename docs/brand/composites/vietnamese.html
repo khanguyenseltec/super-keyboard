@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<title>Vietnamese</title>
+<!-- Left: the app's Tiếng Việt tab (docs/brand/shots/vntab.png). Right: the
+     IBus engine in a terminal, with GNOME's input indicator open. The menu
+     labels are the engine's own (apps/super-keyboard-ibus/src/engine.rs). -->
+<style>
+  .crop { height: 396px; overflow: hidden; }
+  .topbar {
+    position: absolute; left: 0; right: 0; top: 0; height: 34px; background: #0b0b10;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #e6e6ee;
+  }
+  .topbar .right { position: absolute; right: 18px; display: flex; gap: 14px; align-items: center; font-weight: 500; }
+  .topbar .vi { padding: 2px 9px; border-radius: 999px; background: #3a3b4a; font-weight: 700; letter-spacing: .04em; }
+  .term { background: #300a24; }
+  .term .header { background: #2a2a2e; color: #e6e6ee; }
+  .term pre {
+    margin: 0; padding: 18px 20px; height: 168px; font: 19px/1.55 "Ubuntu Mono", "Ubuntu Sans Mono", monospace; color: #f2f2f2;
+  }
+  .p { color: #8ae234; font-weight: 700 } .d { color: #729fcf; font-weight: 700 }
+  .pre { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .cur { display: inline-block; width: 10px; height: 21px; background: #f2f2f2; vertical-align: -4px; }
+  .menu {
+    position: absolute; right: 70px; top: 42px; width: 330px; padding: 10px; border-radius: 14px;
+    background: #2b2b33; box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 18px 50px rgba(0,0,0,.55);
+    font-size: 14.5px; color: #eeeef4;
+  }
+  .menu div { padding: 8px 12px; border-radius: 8px; display: flex; gap: 10px; align-items: center; }
+  .menu div.hi { background: rgba(255,255,255,.08); }
+  .menu .dot { width: 8px; height: 8px; border-radius: 50%; background: #eeeef4; }
+  .menu .nodot { width: 8px; }
+  .menu hr { border: 0; border-top: 1px solid rgba(255,255,255,.10); margin: 6px 4px; }
+  .menu .sw { margin-left: auto; width: 34px; height: 20px; border-radius: 10px; background: #3584e4; position: relative; }
+  .menu .sw::after { content: ""; position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .menu .item { justify-content: flex-start; }
+</style>
+<div class="topbar">Thu 16:42<span class="right"><span class="vi">VI</span><span>⏻</span></span></div>
+<div class="window" style="left:56px; top:150px; width:900px">
+  <div class="header">Super Keyboard<span class="close">✕</span></div>
+  <div class="crop"><img class="content" src="../shots/vntab.png" alt=""></div>
+</div>
+<div class="window term" style="left:780px; top:560px; width:760px">
+  <div class="header">tristan@ubuntu: ~<span class="close">✕</span></div>
+<pre><span class="p">tristan@ubuntu</span>:<span class="d">~</span>$ git commit -m "Thêm gõ tiếng Việt"
+[main b751df3] Thêm gõ tiếng Việt
+<span class="p">tristan@ubuntu</span>:<span class="d">~</span>$ echo "Xin chào, Việt <span class="pre">Nam</span><span class="cur"></span></pre>
+</div>
+<div class="menu">
+  <div class="hi">Tiếng Việt is on: switch to English</div>
+  <hr>
+  <div><span class="dot"></span>Telex</div>
+  <div><span class="nodot"></span>VNI</div>
+  <hr>
+  <div><span class="dot"></span>Classic tones: hòa, thủy</div>
+  <div><span class="nodot"></span>Modern tones: hoà, thuỷ</div>
+  <hr>
+  <div>Check spelling<span class="sw"></span></div>
+  <div>Open Super Keyboard…</div>
+</div>
