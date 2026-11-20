@@ -84,9 +84,11 @@ show-log = true       # show recent output beside the preview text
 
 [vietnamese]          # see Vietnamese typing below
 enabled = false       # the VI / EN button in the top bar switches this
-method = "telex"      # "telex" or "vni"
+method = "telex"      # "telex", "vni" or "viqr"
 tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
 check-spelling = true # only change syllables that can be Vietnamese
+telex-w = true        # Telex: a w with no vowel to mark types ư ("tw" is "tư")
+telex-brackets = false # Telex: [ types ơ and ] types ư
 unicode-form = "nfc"  # "nfc" (ệ is one character) or "nfd" (e and its marks)
 
 [style]               # changes to every theme
@@ -336,50 +338,81 @@ A hidden profile still works if `profile` names it; the menu shows it while it i
 
 ## Vietnamese typing
 
-Super Keyboard types Vietnamese with **Telex** or **VNI**, the two standard ways of
-adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
+Super Keyboard types Vietnamese with **Telex**, **VNI** or **VIQR**, the standard ways
+of adding marks with an ordinary keyboard. Tap **EN** in the top bar to switch to **VI**,
 or open **settings → Tiếng Việt** for the method, tone placement, spelling check,
-Unicode form and a box to try keys in. The tab's cheat sheets are typed by the engine itself, so they always
-match what the keys do.
+Unicode form and a box to try keys in. The tab's cheat sheets are typed by the engine
+itself, so they always match what the keys do.
 
-| | Telex | VNI | Result |
-|---|---|---|---|
-| Tones | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | sắc á, huyền à, hỏi ả, ngã ã, nặng ạ |
-| Remove the tone | `z` | `0` | a |
-| Circumflex | `aa` `ee` `oo` | `a6` `e6` `o6` | â ê ô |
-| Breve | `aw` | `a8` | ă |
-| Horn | `ow` `uw` (or a lone `w`) | `o7` `u7` | ơ ư |
-| Stroke | `dd` | `d9` | đ |
-| Example | `Tieesng Vieejt` | `Tie61ng Vie65t` | Tiếng Việt |
+| | Telex | VNI | VIQR | Result |
+|---|---|---|---|---|
+| Tones | `s` `f` `r` `x` `j` | `1` `2` `3` `4` `5` | `'` `` ` `` `?` `~` `.` | sắc á, huyền à, hỏi ả, ngã ã, nặng ạ |
+| Remove the tone | `z` | `0` | `0` | a |
+| Circumflex | `aa` `ee` `oo` | `a6` `e6` `o6` | `a^` `e^` `o^` | â ê ô |
+| Breve | `aw` | `a8` | `a(` | ă |
+| Horn | `ow` `uw` (or a lone `w`) | `o7` `u7` | `o+` `u+` | ơ ư |
+| Stroke | `dd` | `d9` | `dd` | đ |
+| Example | `Tieesng Vieejt` | `Tie61ng Vie65t` | `Tie^'ng Vie^.t` | Tiếng Việt |
 
 - **Marks go anywhere in the syllable.** `tieengs`, `tiengse` and `tiengs` + `e` all type
   `tiếng`; `nguoiwf` and `nguwowif` both type `người`.
 - **The tone moves with the syllable.** `hoaf` is `hòa`, and adding `n` makes `hoàn`.
   Backspace removes the last letter and puts the tone back where it belongs.
 - **Twice takes it off.** Typing a mark's key again removes the mark and types the key:
-  `ass` is `as`, `ww` is `w`, `a11` is `a1`. The rest of that word types as written.
+  `ass` is `as`, `ww` is `w`, `a11` is `a1`, `a''` is `a'`. The rest of that word types
+  as written.
 - **Tone placement** (`tone-style`) only changes `oa`, `oe` and `uy` at the end of a
   syllable: classic `hòa khỏe thủy`, modern `hoà khoẻ thuỷ`.
 - **Spelling check** (`check-spelling`) only changes syllables that can be Vietnamese,
   so `for`, `class`, `print` and most code type as written. Words such as `test`
   (`tét`) still look Vietnamese: switch to **EN** for English.
-- A syllable ends at anything that is not a letter (or, with VNI, a digit): space,
-  punctuation, Enter, an arrow key or a `Ctrl` chord. Chords are never changed.
+- A syllable ends at anything that is neither a letter nor a key the method marks with
+  (VNI digits, VIQR punctuation, Telex brackets when they are on) and has something to
+  mark: space, other punctuation, Enter, an arrow key or a `Ctrl` chord. Chords are never
+  changed.
+- **VIQR marks are punctuation**, so they only act right after a syllable they can mark:
+  `ba.` is `bạ`, while `x.`, `f(x)`, `c++` and `3.5` type as written. At the end of a
+  sentence:
+  - a mark the word already has is the punctuation: `Vie^.t.` is `Việt.`, `Kho?e?` is
+    `Khỏe?`;
+  - any other mark changes the tone, and typed again at once is the punctuation instead:
+    `kho^ng?` is `khổng`, `kho^ng??` is `không?`, `ba.n??` is `bạn?`;
+  - a backslash after a syllable types the next mark as itself, as in RFC 1456:
+    `kho^ng\?` is `không?`, `I\'m` is `I'm`, `ba\\` is `ba\`. Where there is no
+    Vietnamese syllable before it, it stays a backslash: `C:\dev`, `\(x\)`,
+    `example\.com`, `\\server`.
+- **Words that turn out not to be Vietnamese go back to what you typed.** With the
+  spelling check on, a mark made by VIQR punctuation or a Telex bracket is put back when a
+  later letter makes the word impossible: `don't`, `let's`, `ma.com`, `e.g.` and `m[k]`
+  type as written. A word that is still a Vietnamese syllable stays one (`I'm` is `Ím`;
+  type `I\'m`). Only the last such mark is undone: `tie^'ng.txt` is `tiếng.txt`.
+- **Telex options.** `telex-w = false` stops a `w` with no vowel to mark from typing
+  `ư` (`tw` stays `tw`); `uw`, `ow` and `aw` still type `ư`, `ơ` and `ă`.
+  `telex-brackets = true` makes `[` type `ơ` and `]` type `ư` (`th[` is `thơ`, `m]a` is
+  `mưa`, `TH[` is `THƠ`); typing the bracket twice types the bracket. Brackets that
+  start a syllable still make letters (`x[0]` is `xơ0ư`, `[1]` is `ơ1ư`), so leave this
+  off if you type code. Typing the bracket again right after the `ơ` or `ư` it made types
+  the bracket (`t[[i]` is `t[i]`). Both are on the Tiếng Việt tab while Telex is the
+  method.
 - **Unicode form** (`unicode-form`) is how letters with marks are written. `"nfc"`, the
   default, writes each one as a single precomposed character (*dựng sẵn*): `ệ` is
   U+1EC7. `"nfd"` writes the plain letter followed by its marks as combining characters
   (*tổ hợp*): `ệ` is `e`, U+0323, U+0302. Both look the same on screen. Almost every
   application expects NFC; choose NFD only for one that needs it. With NFD, Backspace on
   a letter of the syllable being typed still removes the whole letter.
+- The app and the input method read the same `[vietnamese]` settings, so keep them the
+  same version (the `.deb` installs both). An older one does not know `method = "viqr"`,
+  `telex-w` or `telex-brackets` and ignores `settings.toml` until it is updated: it keeps
+  the settings it had, or starts with the defaults. It never writes over the file.
 
 ### With the physical keyboard, in every app (Ubuntu)
 
-The **Vietnamese (Super Keyboard)** input method types Telex or VNI with your physical
+The **Vietnamese (Super Keyboard)** input method types Telex, VNI or VIQR with your physical
 keyboard in every application: terminals, browsers, editors, office apps. It is an IBus
 engine (`apps/super-keyboard-ibus`) that uses the same rules and **the same
 `[vietnamese]` settings** as the on-screen keyboard:
 
-- Switch **VI / EN**, **Telex / VNI**, the tone style or the spelling check in the app,
+- Switch **VI / EN**, the method (Telex, VNI or VIQR), the tone style or the spelling check in the app,
   and the input method follows within a second; switch them from the **VI / EN menu
   in the desktop's top bar**, and the app follows. Both sides read and write
   `settings.toml`.

@@ -1,5 +1,5 @@
-//! The Vietnamese tab: the on/off switch, Telex or VNI, tone placement,
-//! spelling, the Unicode form, and a box to try keys in.
+//! The Vietnamese tab: the on/off switch, Telex, VNI or VIQR, tone placement,
+//! spelling, the Unicode form, the Telex options, and a box to try keys in.
 //!
 //! Every result shown (`aa` → `â`) is typed by the engine as the tab renders,
 //! so the cheat sheets always match what the keyboard does.
@@ -51,6 +51,24 @@ const VNI_LETTERS: [Rule; 7] = [
     ("d9", ""),
 ];
 
+const VIQR_TONES: [Rule; 6] = [
+    ("a'", "sắc"),
+    ("a`", "huyền"),
+    ("a?", "hỏi"),
+    ("a~", "ngã"),
+    ("a.", "nặng"),
+    ("a'0", "xoá dấu"),
+];
+const VIQR_LETTERS: [Rule; 7] = [
+    ("a^", ""),
+    ("a(", ""),
+    ("e^", ""),
+    ("o^", ""),
+    ("o+", ""),
+    ("u+", ""),
+    ("dd", ""),
+];
+
 /// What each method is, in a line, and the sentence its card types.
 fn about(method: InputMethod) -> (&'static str, &'static str, [Rule; 6], [Rule; 7]) {
     match method {
@@ -65,6 +83,12 @@ fn about(method: InputMethod) -> (&'static str, &'static str, [Rule; 6], [Rule; 
             "Tie61ng Vie65t",
             VNI_TONES,
             VNI_LETTERS,
+        ),
+        InputMethod::Viqr => (
+            "Punctuation adds the marks, the way Vietnamese is written in plain ASCII.",
+            "Tie^'ng Vie^.t",
+            VIQR_TONES,
+            VIQR_LETTERS,
         ),
     }
 }
@@ -83,6 +107,12 @@ fn examples(method: InputMethod) -> [&'static str; 4] {
             "To6i ye6u Vie65t Nam",
             "d9u7o7ng2 pho61",
             "Kho6ng co1 gi2 quy1 ho7n d9o65c la65p tu75 do",
+        ],
+        InputMethod::Viqr => [
+            "Xin cha`o ca'c ba.n",
+            "To^i ye^u Vie^.t Nam",
+            "ddu+o+`ng pho^'",
+            "Kho^ng co' gi` quy' ho+n ddo^.c la^.p tu+. do",
         ],
     }
 }
@@ -107,7 +137,7 @@ pub fn VietnameseSettings() -> Element {
             section { class: "vn-hero", "data-on": vi.enabled,
                 div { class: "vn-hero-text",
                     h3 { class: "vn-title", "Tiếng Việt" }
-                    p { class: "vn-subtitle", "Type Vietnamese with Telex or VNI, right on the keys." }
+                    p { class: "vn-subtitle", "Type Vietnamese with Telex, VNI or VIQR, right on the keys." }
                     p { class: "vn-status", span { class: "vn-dot" } "{status}" }
                 }
                 button {
@@ -161,11 +191,33 @@ pub fn VietnameseSettings() -> Element {
                     checked: vi.check_spelling,
                     onchange: move |on: bool| state.update_settings(|s| s.vietnamese.check_spelling = on),
                 }
+                if vi.method == InputMethod::Telex {
+                    ToggleField {
+                        label: "A lone w types ư",
+                        checked: vi.telex_w,
+                        onchange: move |on: bool| state.update_settings(|s| s.vietnamese.telex_w = on),
+                    }
+                    ToggleField {
+                        label: "[ and ] type ơ and ư",
+                        checked: vi.telex_brackets,
+                        onchange: move |on: bool| state.update_settings(|s| s.vietnamese.telex_brackets = on),
+                    }
+                }
             }
             p { class: "hint",
                 "Only syllables that can be Vietnamese change, so " code { "for" } ", "
                 code { "class" } " and most code type as written. Typing a mark's key twice takes it off: "
                 code { "{undo_sample(vi.method)}" } "."
+                if vi.method == InputMethod::Telex {
+                    " With the lone w on, " code { "tw" } " is " code { "tư" }
+                    "; off, w is a plain letter there and ư is " code { "uw" } "."
+                }
+                if vi.method == InputMethod::Viqr {
+                    " After a word, a mark it already has is punctuation ("
+                    code { "Vie^.t." } " is " code { "Việt." } "); type any other twice ("
+                    code { "kho^ng??" } " is " code { "không?" } ") or after a backslash ("
+                    code { "kho^ng\\?" } ")."
+                }
             }
 
             h3 { class: "group-title", "Unicode output · Bảng mã Unicode" }
@@ -297,7 +349,13 @@ fn MethodCard(
     let selected = options.method == method;
     let options = VietnameseOptions { method, ..options };
     let (description, sample, tones, letters) = about(method);
-    let rule = |(keys, name): Rule| (keys, transliterate(keys, options), name);
+    let rule = |(keys, name): Rule| {
+        (
+            keys,
+            transliterate(keys, options),
+            rule_note(keys, name, options),
+        )
+    };
     let tones: Vec<_> = tones.into_iter().map(rule).collect();
     let letters: Vec<_> = letters.into_iter().map(rule).collect();
 
@@ -377,11 +435,22 @@ fn unicode_sample(options: VietnameseOptions, form: UnicodeForm) -> String {
     format!("{shown} is {count} characters")
 }
 
-/// `ass → as` or `a11 → a1`.
+/// `ass → as`, `a11 → a1` or `a'' → a'`.
 fn undo_sample(method: InputMethod) -> &'static str {
     match method {
         InputMethod::Telex => "ass → as",
         InputMethod::Vni => "a11 → a1",
+        InputMethod::Viqr => "a'' → a'",
+    }
+}
+
+/// The note under a cheat-sheet rule, true to the options: `uw` is "or w"
+/// only while a lone `w` types `ư`.
+fn rule_note(keys: &str, note: &'static str, options: VietnameseOptions) -> &'static str {
+    if keys == "uw" && !options.telex_w {
+        ""
+    } else {
+        note
     }
 }
 
@@ -414,7 +483,16 @@ mod tests {
             .map(|(keys, _)| transliterate(keys, vni))
             .collect();
         assert_eq!(made, ["â", "ă", "ê", "ô", "ơ", "ư", "đ"]);
-        for tones in [(TELEX_TONES, telex), (VNI_TONES, vni)] {
+        let viqr = VietnameseOptions {
+            method: InputMethod::Viqr,
+            ..telex
+        };
+        let made: Vec<String> = VIQR_LETTERS
+            .iter()
+            .map(|(keys, _)| transliterate(keys, viqr))
+            .collect();
+        assert_eq!(made, ["â", "ă", "ê", "ô", "ơ", "ư", "đ"]);
+        for tones in [(TELEX_TONES, telex), (VNI_TONES, vni), (VIQR_TONES, viqr)] {
             let made: Vec<String> = tones
                 .0
                 .iter()
@@ -445,22 +523,25 @@ mod tests {
     }
 
     #[test]
-    fn examples_type_the_same_phrases_in_both_methods() {
+    fn examples_type_the_same_phrases_in_every_method() {
         let telex = VietnameseOptions::default();
-        let vni = VietnameseOptions {
-            method: InputMethod::Vni,
-            ..telex
-        };
-        for (t, v) in examples(InputMethod::Telex)
-            .iter()
-            .zip(examples(InputMethod::Vni))
-        {
-            assert_eq!(transliterate(t, telex), transliterate(v, vni), "{t} / {v}");
+        for method in InputMethod::ALL {
+            let options = VietnameseOptions { method, ..telex };
+            for (t, other) in examples(InputMethod::Telex).iter().zip(examples(method)) {
+                assert_eq!(
+                    transliterate(t, telex),
+                    transliterate(other, options),
+                    "{t} / {other}"
+                );
+            }
+            assert_eq!(
+                transliterate(about(InputMethod::Telex).1, telex),
+                transliterate(about(method).1, options)
+            );
+            // The undo sample is what the engine does.
+            let (keys, made) = undo_sample(method).split_once(" → ").unwrap();
+            assert_eq!(transliterate(keys, options), made);
         }
-        assert_eq!(
-            transliterate(about(InputMethod::Telex).1, telex),
-            transliterate(about(InputMethod::Vni).1, vni)
-        );
     }
 
     #[test]
@@ -473,6 +554,19 @@ mod tests {
     }
 
     #[test]
+    fn the_uw_note_follows_the_lone_w_option() {
+        let on = VietnameseOptions::default();
+        let off = VietnameseOptions {
+            telex_w: false,
+            ..on
+        };
+        assert_eq!(rule_note("uw", "or w", on), "or w");
+        assert_eq!(rule_note("uw", "or w", off), "");
+        assert_eq!(transliterate("w", off), "w", "the note matches the engine");
+        assert_eq!(rule_note("af", "huyền", off), "huyền");
+    }
+
+    #[test]
     fn reset_keeps_the_switch() {
         let mut settings = Settings {
             vietnamese: VietnameseOptions {
@@ -480,6 +574,8 @@ mod tests {
                 method: InputMethod::Vni,
                 tone_style: ToneStyle::Modern,
                 check_spelling: false,
+                telex_w: false,
+                telex_brackets: true,
                 unicode_form: UnicodeForm::Nfd,
             },
             ..Settings::default()

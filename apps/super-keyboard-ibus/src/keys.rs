@@ -6,11 +6,19 @@
 //! arrow, a shortcut, or when the application moves the cursor. Keys the engine
 //! does not use are left to the application.
 
-use super_keyboard_core::{Composer, VietnameseOptions};
+use super_keyboard_core::{Composer, InputMethod, VietnameseOptions};
 
 /// X keysyms the engine looks at.
 pub mod keysym {
     pub const BACKSPACE: u32 = 0xff08;
+    pub const DEAD_GRAVE: u32 = 0xfe50;
+    pub const DEAD_ACUTE: u32 = 0xfe51;
+    pub const DEAD_CIRCUMFLEX: u32 = 0xfe52;
+    pub const DEAD_TILDE: u32 = 0xfe53;
+    pub const DEAD_BREVE: u32 = 0xfe55;
+    pub const DEAD_BELOWDOT: u32 = 0xfe60;
+    pub const DEAD_HOOK: u32 = 0xfe61;
+    pub const DEAD_HORN: u32 = 0xfe62;
     #[cfg(test)]
     pub const RETURN: u32 = 0xff0d;
     #[cfg(test)]
@@ -99,7 +107,14 @@ impl KeyHandler {
                 commit: None,
             };
         }
-        match printable(keyval) {
+        let typed = printable(keyval).or_else(|| {
+            // Layouts with dead keys (US International, German, French...)
+            // send ' ` ^ ~ as dead keys; VIQR needs them as its marks.
+            (self.options().method == InputMethod::Viqr)
+                .then(|| viqr_dead_key(keyval))
+                .flatten()
+        });
+        match typed {
             Some(c) if self.composer.push_key(c) => Response {
                 handled: true,
                 commit: None,
@@ -122,6 +137,21 @@ impl KeyHandler {
             commit: (!text.is_empty()).then_some(text),
         }
     }
+}
+
+/// The VIQR mark a dead key stands for.
+fn viqr_dead_key(keyval: u32) -> Option<char> {
+    Some(match keyval {
+        keysym::DEAD_GRAVE => '`',
+        keysym::DEAD_ACUTE => '\'',
+        keysym::DEAD_CIRCUMFLEX => '^',
+        keysym::DEAD_TILDE => '~',
+        keysym::DEAD_BREVE => '(',
+        keysym::DEAD_BELOWDOT => '.',
+        keysym::DEAD_HOOK => '?',
+        keysym::DEAD_HORN => '+',
+        _ => return None,
+    })
 }
 
 /// The ASCII character a keysym types, if any.
@@ -275,6 +305,72 @@ mod tests {
             Response {
                 handled: true,
                 commit: Some("x2".into())
+            }
+        );
+    }
+
+    #[test]
+    fn viqr_takes_its_marks_from_dead_keys() {
+        let mut h = KeyHandler::new(VietnameseOptions {
+            enabled: true,
+            method: InputMethod::Viqr,
+            ..VietnameseOptions::default()
+        });
+        type_keys(&mut h, "Vie");
+        assert!(h.key(keysym::DEAD_CIRCUMFLEX, 0).handled);
+        type_keys(&mut h, ".t");
+        assert_eq!(h.preedit(), "Việt");
+        // Telex leaves dead keys to the application.
+        let mut telex = KeyHandler::new(VietnameseOptions {
+            enabled: true,
+            ..VietnameseOptions::default()
+        });
+        assert_eq!(telex.key(keysym::DEAD_ACUTE, 0), Response::default());
+    }
+
+    #[test]
+    fn every_dead_key_types_its_viqr_mark() {
+        let marks = [
+            (keysym::DEAD_ACUTE, '\'', "á"),
+            (keysym::DEAD_GRAVE, '`', "à"),
+            (keysym::DEAD_HOOK, '?', "ả"),
+            (keysym::DEAD_TILDE, '~', "ã"),
+            (keysym::DEAD_BELOWDOT, '.', "ạ"),
+            (keysym::DEAD_CIRCUMFLEX, '^', "â"),
+            (keysym::DEAD_BREVE, '(', "ă"),
+        ];
+        for (keyval, mark, made) in marks {
+            assert_eq!(viqr_dead_key(keyval), Some(mark));
+            let mut h = KeyHandler::new(VietnameseOptions {
+                enabled: true,
+                method: InputMethod::Viqr,
+                ..VietnameseOptions::default()
+            });
+            type_keys(&mut h, "a");
+            assert!(h.key(keyval, 0).handled, "{mark}");
+            assert_eq!(h.preedit(), made, "{mark}");
+        }
+        assert_eq!(viqr_dead_key(keysym::DEAD_HORN), Some('+'));
+        assert_eq!(viqr_dead_key(keysym::BACKSPACE), None);
+    }
+
+    #[test]
+    fn viqr_punctuation_marks_a_syllable_or_ends_it() {
+        let mut h = KeyHandler::new(VietnameseOptions {
+            enabled: true,
+            method: InputMethod::Viqr,
+            ..VietnameseOptions::default()
+        });
+        // With nothing to mark, punctuation is the application's.
+        assert_eq!(h.key('.' as u32, 0), Response::default());
+        assert_eq!(type_keys(&mut h, "Vie^.t ").0, "Việt ");
+        // A mark the syllable cannot take ends it, and is typed after it.
+        type_keys(&mut h, "x");
+        assert_eq!(
+            h.key('?' as u32, 0),
+            Response {
+                handled: true,
+                commit: Some("x?".into())
             }
         );
     }

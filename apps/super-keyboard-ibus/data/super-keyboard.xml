@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component>
   <name>org.freedesktop.IBus.SuperKeyboard</name>
-  <description>Super Keyboard: Vietnamese typing with Telex or VNI</description>
+  <description>Super Keyboard: Vietnamese typing with Telex, VNI or VIQR</description>
   <exec>/usr/libexec/super-keyboard-ibus --ibus</exec>
   <version>0.1.0</version>
   <author>Super Keyboard contributors</author>
@@ -12,7 +12,7 @@
     <engine>
       <name>super-keyboard</name>
       <longname>Vietnamese (Super Keyboard)</longname>
-      <description>Telex and VNI, shared with the Super Keyboard on-screen keyboard</description>
+      <description>Telex, VNI and VIQR, shared with the Super Keyboard on-screen keyboard</description>
       <language>vi</language>
       <license>MIT OR Apache-2.0</license>
       <author>Super Keyboard contributors</author>

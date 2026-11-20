@@ -10,7 +10,7 @@
 //!   modifiers) that turns gesture [`Trigger`]s into [`Output`].
 //! - [`output`]: [`Output`] values, the [`OutputSink`] trait that platform
 //!   backends implement, and the in-app [`PreviewSink`].
-//! - [`vietnamese`]: Telex and VNI typing, as a [`Composer`] that rewrites
+//! - [`vietnamese`]: Telex, VNI and VIQR typing, as a [`Composer`] that rewrites
 //!   output on its way to the sink.
 //!
 //! A front end wires them together:

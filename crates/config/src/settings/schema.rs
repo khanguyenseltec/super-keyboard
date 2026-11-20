@@ -75,7 +75,7 @@ struct PreviewFile {
     show_log: Option<bool>,
 }
 
-/// `[vietnamese]`: Telex or VNI typing.
+/// `[vietnamese]`: Telex, VNI or VIQR typing.
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 struct VietnameseFile {
@@ -83,6 +83,8 @@ struct VietnameseFile {
     method: Option<String>,
     tone_style: Option<String>,
     check_spelling: Option<bool>,
+    telex_w: Option<bool>,
+    telex_brackets: Option<bool>,
     unicode_form: Option<String>,
 }
 
@@ -104,6 +106,8 @@ impl VietnameseFile {
                 }
             },
             check_spelling: self.check_spelling.unwrap_or(defaults.check_spelling),
+            telex_w: self.telex_w.unwrap_or(defaults.telex_w),
+            telex_brackets: self.telex_brackets.unwrap_or(defaults.telex_brackets),
             unicode_form: match self.unicode_form {
                 None => defaults.unicode_form,
                 Some(name) => {
@@ -351,9 +355,17 @@ mod tests {
         );
         assert!(error("[keyboard]\nsize = 3").contains("unknown field `size`"));
         assert_eq!(
-            error("[vietnamese]\nmethod = \"viqr\""),
-            r#"`vietnamese.method` must be "telex" or "vni", not "viqr""#
+            error("[vietnamese]\nmethod = \"unikey\""),
+            r#"`vietnamese.method` must be "telex", "vni" or "viqr", not "unikey""#
         );
+        assert_eq!(
+            Settings::from_toml("[vietnamese]\nmethod = \"viqr\"")
+                .unwrap()
+                .vietnamese
+                .method,
+            super_keyboard_core::InputMethod::Viqr
+        );
+        assert!(error("[vietnamese]\ntelex-w = \"no\"").contains("invalid type"));
         assert_eq!(
             error("[vietnamese]\ntone-style = \"new\""),
             r#"`vietnamese.tone-style` must be "classic" or "modern", not "new""#
