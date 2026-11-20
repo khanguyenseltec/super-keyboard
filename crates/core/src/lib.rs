@@ -11,7 +11,7 @@
 //!   which types the closer of a bracket or quote.
 //! - [`output`]: [`Output`] values, the [`OutputSink`] trait that platform
 //!   backends implement, and the in-app [`PreviewSink`].
-//! - [`vietnamese`]: Telex and VNI typing, as a [`Composer`] that rewrites
+//! - [`vietnamese`]: Telex, VNI and VIQR typing, as a [`Composer`] that rewrites
 //!   output on its way to the sink.
 //!
 //! A front end wires them together:
@@ -58,4 +58,4 @@ pub use layout::{
     Section, Swipe,
 };
 pub use output::{BufferView, KeyCode, Motion, Output, OutputSink, PreviewSink, TextBuffer};
-pub use vietnamese::{Composer, InputMethod, ToneStyle, VietnameseOptions};
+pub use vietnamese::{Composer, InputMethod, ToneStyle, UnicodeForm, VietnameseOptions};

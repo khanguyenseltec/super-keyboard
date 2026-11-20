@@ -21,7 +21,7 @@ use crate::time;
 pub struct KeyboardController {
     pub keyboard: Signal<Keyboard>,
     pub sink: Signal<PreviewSink>,
-    /// Telex or VNI typing, between the keyboard and the sink.
+    /// Telex, VNI or VIQR typing, between the keyboard and the sink.
     pub vietnamese: Signal<Composer>,
     /// Brackets and quotes typed in pairs, between the keyboard and the
     /// composer. Not reactive: nothing draws it.

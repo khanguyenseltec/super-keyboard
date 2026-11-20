@@ -35,7 +35,7 @@ PreviewSink  Android sink          Linux uinput sink          Linux portal sink 
 | `crates/core/layouts/` | Built-in layouts. `dev.toml` is the default. |
 | `crates/config` | `super-keyboard-config`: the config directory, `settings.toml` (parse, validate, save with comments kept), themes and style overrides, the layout and theme libraries, and reload with last-good fallback. No UI dependency. |
 | `crates/config/themes/` | Built-in themes as JSON, and `theme.schema.json` for editors. |
-| `apps/super-keyboard-ibus` | `super-keyboard-ibus`: the Vietnamese input method for IBus. Physical-keyboard typing in every app, with the core's Telex and VNI rules and the app's `[vietnamese]` settings. Talks to IBus over D-Bus with `zbus`; `tests/e2e.sh` checks it through a private `ibus-daemon`. |
+| `apps/super-keyboard-ibus` | `super-keyboard-ibus`: the Vietnamese input method for IBus. Physical-keyboard typing in every app, with the core's Telex, VNI and VIQR rules and the app's `[vietnamese]` settings. Talks to IBus over D-Bus with `zbus`; `tests/e2e.sh` checks it through a private `ibus-daemon`. |
 | `apps/super-keyboard` | The Dioxus app. Cargo features `desktop` (default), `mobile` (Android) and `web` (browser preview for layout work). |
 | `docs/` | This document, the [roadmap](ROADMAP.md) and the [customizing guide](CUSTOMIZING.md). |
 | *planned* `crates/sink-linux` | uinput, portal and XTest output for Ubuntu. |
@@ -108,11 +108,13 @@ no text, only the closers it typed and is still inside, and forgets them when th
 moves. Because it only sends `Text` and those three keys, every sink gets it for free.
 
 **Vietnamese typing rewrites output.** `vietnamese::Composer` sits between `Keyboard`
-(after `AutoPair`) and the sink. It keeps the syllable being typed as letters plus one tone, applies Telex or
-VNI keys to it, places the tone from the whole syllable, and sends the difference from what
+(after `AutoPair`) and the sink. It keeps the syllable being typed as letters plus one tone, applies Telex,
+VNI or VIQR keys to it, places the tone from the whole syllable, and sends the difference from what
 is on screen as Backspaces and text (`hoa` + `f` sends ⌫ ⌫ `òa`). Anything that is not a
-letter ends the syllable and passes through. Because it only ever sends `Text` and
-Backspace, it needs nothing from a platform sink.
+letter or one of the method's mark keys ends the syllable and passes through. Because it only ever sends `Text` and
+Backspace, it needs nothing from a platform sink. The syllable is written precomposed
+(NFC) or, with `unicode-form = "nfd"`, as letters followed by combining marks; the
+difference is counted in code points, one Backspace each.
 
 The physical keyboard takes another route to the same rules. `super-keyboard-ibus` is
 an IBus engine: IBus hands it every key in every application, and it uses the composer's

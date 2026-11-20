@@ -25,9 +25,12 @@
 //!
 //! [vietnamese]
 //! enabled = true        # type Vietnamese with the keys
-//! method = "telex"      # "telex" or "vni"
+//! method = "telex"      # "telex", "vni" or "viqr"
 //! tone-style = "classic" # "classic" (hòa, thủy) or "modern" (hoà, thuỷ)
 //! check-spelling = true # only change syllables that can be Vietnamese
+//! telex-w = true        # Telex: a w with no vowel to mark types ư
+//! telex-brackets = false # Telex: [ and ] type ơ and ư
+//! unicode-form = "nfc"  # "nfc" (ệ is one character) or "nfd" (e and its marks)
 //!
 //! [style.dark]
 //! accent = "#ff9e64"
@@ -67,7 +70,7 @@ pub struct Settings {
     pub keys: KeySettings,
     pub keyboard: KeyboardSettings,
     pub preview: PreviewSettings,
-    /// Telex or VNI typing: `[vietnamese]`.
+    /// Telex, VNI or VIQR typing: `[vietnamese]`.
     pub vietnamese: VietnameseOptions,
     pub style: Style,
     /// The order of the profile menu, and which profiles it hides.
@@ -352,7 +355,7 @@ impl Default for PreviewSettings {
 mod tests {
     use super::*;
     use crate::style::{StyleValue, StyleVar, ValueKind};
-    use super_keyboard_core::{InputMethod, ToneStyle};
+    use super_keyboard_core::{InputMethod, ToneStyle, UnicodeForm};
 
     #[test]
     fn empty_file_is_the_defaults() {
@@ -393,6 +396,9 @@ mod tests {
             method = "vni"
             tone-style = "modern"
             check-spelling = false
+            telex-w = false
+            telex-brackets = true
+            unicode-form = "nfd"
             [style]
             radius = "10px"
             [style.dark]
@@ -440,6 +446,9 @@ mod tests {
                 method: InputMethod::Vni,
                 tone_style: ToneStyle::Modern,
                 check_spelling: false,
+                telex_w: false,
+                telex_brackets: true,
+                unicode_form: UnicodeForm::Nfd,
             }
         );
         let value = |kind, v: &str| StyleValue::parse(kind, v).unwrap();

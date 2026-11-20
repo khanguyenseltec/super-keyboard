@@ -192,12 +192,19 @@ mod tests {
             r#"role="switch" aria-checked=false"#,
             ">Telex</span>",
             ">VNI</span>",
+            ">VIQR</span>",
+            "A lone w types ư",
+            "[ and ] type ơ and ư",
             "Tiếng Việt</span>",
             "hòa khỏe thủy",
             "hoà khoẻ thuỷ",
             "Xin chào các bạn",
             "Không có gì quý hơn độc lập tự do",
             "Check spelling",
+            "Precomposed (NFC)",
+            "Decomposed (NFD)",
+            "Việt is 4 characters",
+            "Việt is 6 characters",
         ] {
             assert!(html.contains(text), "{text}: {html}");
         }

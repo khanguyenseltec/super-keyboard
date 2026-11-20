@@ -38,10 +38,12 @@ pub enum SettingsError {
     NotAutoOrNumber { field: &'static str },
     #[error("`keyboard.align` must be \"center\", \"left\" or \"right\", not {0:?}")]
     UnknownAlign(String),
-    #[error("`vietnamese.method` must be \"telex\" or \"vni\", not {0:?}")]
+    #[error("`vietnamese.method` must be \"telex\", \"vni\" or \"viqr\", not {0:?}")]
     UnknownInputMethod(String),
     #[error("`vietnamese.tone-style` must be \"classic\" or \"modern\", not {0:?}")]
     UnknownToneStyle(String),
+    #[error("`vietnamese.unicode-form` must be \"nfc\" or \"nfd\", not {0:?}")]
+    UnknownUnicodeForm(String),
     #[error("unknown style variable `{path}` (known: {known})")]
     UnknownStyleVar { path: String, known: String },
     #[error("`{path}`: {reason}")]

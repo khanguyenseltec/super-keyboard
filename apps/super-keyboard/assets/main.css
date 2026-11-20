@@ -140,8 +140,25 @@ code {
 }
 
 @media (max-width: 480px) {
+    .bar {
+        gap: 6px;
+        padding: 6px 8px;
+    }
+
     .bar .title {
         display: none;
+    }
+
+    /* The layer name is the way back to the base layer: keep it readable
+     * next to the VI switch, and let the profile picker give way. */
+    .bar .status {
+        min-width: 4ch;
+    }
+
+    .bar .profile-picker {
+        min-width: 0;
+        flex: 0 1 auto;
+        max-width: 38%;
     }
 }
 
@@ -715,8 +732,18 @@ code {
 /* Method cards with their cheat sheets. */
 .vn-methods {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
     gap: 12px;
+    container-type: inline-size;
+}
+
+/* Two columns leave the third method alone on its row: give it the whole row.
+ * Two columns fit from 2 x 240 + 12 = 492px, three from 3 x 240 + 2 x 12 =
+ * 744px; keep these in step with the column minimum and gap above. */
+@container (492px <= width < 744px) {
+    .vn-method:nth-child(3):last-child {
+        grid-column: 1 / -1;
+    }
 }
 
 .vn-method {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs the Super Keyboard Vietnamese engine for IBus from source, so the
-# physical keyboard types Telex or VNI in every application.
+# physical keyboard types Telex, VNI or VIQR in every application.
 #
 #   apps/super-keyboard-ibus/install.sh              build, install, add the input source
 #   apps/super-keyboard-ibus/install.sh --uninstall  remove it again
@@ -54,7 +54,7 @@ fi
 cat <<'MSG'
 
 Done. Switch input source with Super+Space, or from the indicator in the top
-bar. The indicator shows VI or EN and has a menu for Telex / VNI; the same
+bar. The indicator shows VI or EN and has a menu for Telex / VNI / VIQR; the same
 switches are in the Super Keyboard app (VI button, Tiếng Việt settings), and
 the two stay in sync.
 MSG

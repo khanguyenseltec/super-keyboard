@@ -1,7 +1,7 @@
 //! `super-keyboard-ibus`: Vietnamese typing with the physical keyboard, in
 //! every application, as an IBus input method engine.
 //!
-//! It uses the same Telex and VNI rules as the on-screen keyboard and shares
+//! It uses the same Telex, VNI and VIQR rules as the on-screen keyboard and shares
 //! its `[vietnamese]` settings through `settings.toml`, so switching VI / EN or
 //! the method on either side changes both.
 //!
@@ -47,7 +47,7 @@ fn main() -> ExitCode {
         }
         Some("--help" | "-h") => {
             println!(
-                "super-keyboard-ibus: Vietnamese typing (Telex, VNI) for IBus, shared with Super Keyboard\n\n\
+                "super-keyboard-ibus: Vietnamese typing (Telex, VNI, VIQR) for IBus, shared with Super Keyboard\n\n\
                  --ibus              run as started by IBus\n\
                  --register          register with the running IBus now (no install needed)\n\
                  --xml [EXEC]        print the IBus component file"
@@ -71,7 +71,7 @@ fn current_exe() -> String {
 fn component(exec: String) -> Component {
     Component {
         name: COMPONENT_NAME,
-        description: "Super Keyboard: Vietnamese typing with Telex or VNI",
+        description: "Super Keyboard: Vietnamese typing with Telex, VNI or VIQR",
         version: env!("CARGO_PKG_VERSION"),
         license: "MIT OR Apache-2.0",
         author: "Super Keyboard contributors",
@@ -80,11 +80,12 @@ fn component(exec: String) -> Component {
         engines: vec![EngineDesc {
             name: ENGINE_NAME,
             longname: "Vietnamese (Super Keyboard)",
-            description: "Telex and VNI, shared with the Super Keyboard on-screen keyboard",
+            description: "Telex, VNI and VIQR, shared with the Super Keyboard on-screen keyboard",
             language: "vi",
             license: "MIT OR Apache-2.0",
             author: "Super Keyboard contributors",
-            icon: "input-keyboard".to_owned(),
+            // Installed by the .deb into the hicolor icon theme.
+            icon: "super-keyboard".to_owned(),
             layout: "us",
             symbol: "VI",
             setup: "/usr/bin/super-keyboard".to_owned(),
