@@ -732,8 +732,17 @@ code {
 /* Method cards with their cheat sheets. */
 .vn-methods {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
     gap: 12px;
+    container-type: inline-size;
+}
+
+/* Two columns (492 to 743 px of grid) leave the third method alone on its
+ * row: give it the whole row instead of half. */
+@container (min-width: 492px) and (max-width: 743px) {
+    .vn-method:nth-child(3):last-child {
+        grid-column: 1 / -1;
+    }
 }
 
 .vn-method {
