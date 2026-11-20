@@ -1,7 +1,8 @@
 //! Auto-pairing: an opening bracket or quote types its closer too.
 //!
-//! [`AutoPair`] sits between the [`Keyboard`](crate::Keyboard) and the sink (before
-//! the Vietnamese [`Composer`](crate::Composer)). It only ever sends `Text` and the
+//! [`AutoPair`] sits between the Vietnamese [`Composer`](crate::Composer) and the
+//! sink, so a bracket or quote the input method marks with (VIQR `(`, Telex `[`)
+//! is already a letter when it gets here. It only ever sends `Text` and the
 //! Left, Right and Delete keys, so every sink gets auto-pairing for free.
 
 use crate::{
@@ -344,13 +345,46 @@ mod tests {
         });
         let mut sink = PreviewSink::default();
         for output in outputs("(\"Vieejt\")") {
-            for output in pairs.process(output) {
-                for output in composer.process(output) {
+            for output in composer.process(output) {
+                for output in pairs.process(output) {
                     sink.emit(output);
                 }
             }
         }
         assert_eq!(sink.text(), "(\"Việt\")");
         assert_eq!(sink.buffer().view().after, "");
+    }
+
+    /// Through the composer first, as the app wires it: a VIQR mark key is a
+    /// mark after a letter and an opener anywhere else.
+    #[test]
+    fn viqr_marks_are_marks_and_openers_still_pair() {
+        let mut pairs = AutoPair::new(true);
+        let mut composer = Composer::new(VietnameseOptions {
+            enabled: true,
+            method: crate::InputMethod::Viqr,
+            ..VietnameseOptions::default()
+        });
+        let mut sink = PreviewSink::default();
+        for output in outputs("(a` (b") {
+            for output in composer.process(output) {
+                for output in pairs.process(output) {
+                    sink.emit(output);
+                }
+            }
+        }
+        assert_eq!(sink.text(), "(à (b))");
+        assert_eq!(sink.buffer().view().after, "))");
+        // Backspace takes the b, then the empty inner pair as a whole, then
+        // the space.
+        for _ in 0..3 {
+            for output in composer.process(key(NamedKey::Backspace)) {
+                for output in pairs.process(output) {
+                    sink.emit(output);
+                }
+            }
+        }
+        assert_eq!(sink.text(), "(à)");
+        assert_eq!(sink.buffer().view().after, ")");
     }
 }

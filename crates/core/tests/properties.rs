@@ -489,3 +489,48 @@ proptest! {
         }
     }
 }
+
+proptest! {
+    /// Auto-pairing after the composer, as the app wires them: the text before
+    /// the cursor is what the composer alone would type, and all that is ever
+    /// added after the cursor is closers. So a mark key is never paired, and a
+    /// pair never breaks a syllable.
+    #[test]
+    fn auto_pair_after_vietnamese_types_what_the_composer_does(
+        keys in prop::collection::vec(
+            prop_oneof![
+                4 => vietnamese_key(),
+                1 => proptest::sample::select("(){}[]\"'`".chars().collect::<Vec<_>>())
+                    .prop_map(|c| Output::Text(c.into())),
+            ],
+            0..60,
+        ),
+        method in proptest::sample::select(InputMethod::ALL.to_vec()),
+        telex_brackets in any::<bool>(),
+        nfd in any::<bool>(),
+    ) {
+        let options = VietnameseOptions {
+            enabled: true,
+            method,
+            telex_brackets,
+            unicode_form: if nfd { UnicodeForm::Nfd } else { UnicodeForm::Nfc },
+            ..VietnameseOptions::default()
+        };
+        let (mut alone, mut composer) = (Composer::new(options), Composer::new(options));
+        let mut pairs = AutoPair::new(true);
+        let (mut expected, mut sink) = (PreviewSink::default(), PreviewSink::default());
+        for key in keys {
+            for output in alone.process(key.clone()) {
+                expected.emit(output);
+            }
+            for output in composer.process(key) {
+                for output in pairs.process(output) {
+                    sink.emit(output);
+                }
+            }
+            let view = sink.buffer().view();
+            prop_assert_eq!(view.before, expected.text());
+            prop_assert!(view.after.chars().all(|c| ")]}\"'`".contains(c)), "{:?}", view.after);
+        }
+    }
+}

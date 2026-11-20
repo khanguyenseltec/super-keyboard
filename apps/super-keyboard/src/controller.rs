@@ -2,7 +2,7 @@
 //!
 //! The engine decides everything; this module only feeds it events with
 //! timestamps, runs a timer while a hold or repeat is pending, and passes the
-//! output through auto-pairing and the Vietnamese composer to the sink.
+//! output through the Vietnamese composer and auto-pairing to the sink.
 
 use dioxus::{
     core::{Task, spawn_forever},
@@ -21,10 +21,10 @@ use crate::time;
 pub struct KeyboardController {
     pub keyboard: Signal<Keyboard>,
     pub sink: Signal<PreviewSink>,
-    /// Telex, VNI or VIQR typing, between the keyboard and the sink.
+    /// Telex, VNI or VIQR typing, between the keyboard and auto-pairing.
     pub vietnamese: Signal<Composer>,
-    /// Brackets and quotes typed in pairs, between the keyboard and the
-    /// composer. Not reactive: nothing draws it.
+    /// Brackets and quotes typed in pairs, between the composer and the
+    /// sink. Not reactive: nothing draws it.
     pairs: CopyValue<AutoPair>,
     /// Keys under a finger, for drawing them pressed.
     pressed: Signal<Vec<KeyId>>,
@@ -162,9 +162,11 @@ impl KeyboardController {
             let mut pairs = self.pairs.write();
             let mut composer = self.vietnamese.write();
             let mut sink = self.sink.write();
+            // The composer first, so a bracket or quote the input method marks
+            // with (VIQR `(`, Telex `[`) becomes a letter before it can pair.
             for output in outputs {
-                for output in pairs.process(output) {
-                    for output in composer.process(output) {
+                for output in composer.process(output) {
+                    for output in pairs.process(output) {
                         sink.emit(output);
                     }
                 }
@@ -213,7 +215,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use super_keyboard_core::{Action, Layout, Modifier, NamedKey};
+    use super_keyboard_core::{Action, InputMethod, Layout, Modifier, NamedKey};
 
     /// Runs `test` with a controller inside a Dioxus runtime, as event handlers do.
     fn with_controller(test: impl FnOnce(KeyboardController)) {
@@ -353,6 +355,44 @@ mod tests {
                 tap(&mut controller, &Action::Text(c.into()));
             }
             assert_eq!(text(&controller), "(việt)");
+        });
+    }
+
+    /// A bracket the input method marks with is a mark, not an opener: the
+    /// composer sees each key before auto-pairing does.
+    #[test]
+    fn a_bracket_that_marks_a_letter_is_not_paired() {
+        with_controller(|mut controller| {
+            controller.set_auto_pair(true);
+            let type_keys = |controller: &mut KeyboardController, keys: &[&str]| {
+                for c in keys {
+                    tap(controller, &Action::Text((*c).into()));
+                }
+            };
+
+            controller.set_vietnamese(VietnameseOptions {
+                enabled: true,
+                method: InputMethod::Viqr,
+                ..VietnameseOptions::default()
+            });
+            type_keys(&mut controller, &["(", "a", "("]);
+            assert_eq!(text(&controller), "(ă)");
+            assert_eq!(controller.sink.peek().buffer().view().after, ")");
+            type_keys(&mut controller, &[")"]);
+            assert_eq!(controller.sink.peek().buffer().view().after, "");
+            controller.clear_preview();
+
+            controller.set_vietnamese(VietnameseOptions {
+                enabled: true,
+                telex_brackets: true,
+                ..VietnameseOptions::default()
+            });
+            type_keys(&mut controller, &["m", "["]);
+            assert_eq!(text(&controller), "mơ");
+            // A bracket the method does not use still opens a pair.
+            tap(&mut controller, &Action::Key(NamedKey::Space));
+            type_keys(&mut controller, &["("]);
+            assert_eq!(text(&controller), "mơ ()");
         });
     }
 

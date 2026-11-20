@@ -129,7 +129,9 @@ between them: `(` types `()`, and likewise for `[`, `{`, `"`, `'` and `` ` ``.
 
 It is off by default: editors that pair brackets themselves (most IDEs, and shells with
 a plugin for it) would double them. It works with Vietnamese typing: `("Vieejt")` is
-`("Việt")`.
+`("Việt")`. A bracket or quote your input method uses as a mark stays a mark right
+after a letter (VIQR `a(` is `ă`, `` a` `` is `à`; with Telex brackets on, `m[` is `mơ`)
+and opens a pair anywhere else.
 
 ## Themes
 
