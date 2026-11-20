@@ -115,7 +115,7 @@ Layouts and themes are data that can never run code or load anything.
 | | Long-press actions, key repeat for Backspace and arrows, space-bar cursor swipe (Shift selects) | ✅ Done |
 | **Tiếng Việt** | Telex, VNI and VIQR on the on-screen keys, with a VI / EN switch and live cheat sheets | ✅ Done |
 | | Vietnamese with the physical keyboard in every Ubuntu app (IBus), in sync with the app | ✅ Done |
-| | Shorthand (*gõ tắt*), English auto-restore, per-app VI / EN, VIQR | 🗺️ v0.5 |
+| | Shorthand (*gõ tắt*), English auto-restore, per-app VI / EN | 🗺️ v0.5 |
 | **Make it yours** | Layouts in TOML ("keyboard as code") with clear, located errors | ✅ Done |
 | | Modular sections (number row, brackets, terminal keys...) switched on or off and reordered per profile | ✅ Done |
 | | Profiles and presets (Coding, Terminal, Compact...) and a profile menu you can reorder and trim | ✅ Done |
@@ -376,7 +376,7 @@ flowchart LR
     config --> app["apps/super-keyboard<br/>Dioxus UI"]
     app -- "pointer events + time" --> gestures["Gestures<br/>tap · hold · repeat · swipe"]
     gestures --> keyboard["Keyboard<br/>layers · modifiers"]
-    keyboard -- "text or key chord" --> composer["Composer<br/>Telex · VNI"]
+    keyboard -- "text or key chord" --> composer["Composer<br/>Telex · VNI · VIQR"]
     composer --> sink{{"OutputSink"}}
     sink --> preview["Preview<br/>today"]
     sink -.-> android["Android InputConnection<br/>v0.2"]
@@ -414,7 +414,7 @@ Wayland, are written up with their options in [docs/ARCHITECTURE.md](docs/ARCHIT
 | **v0.2** Android system keyboard | Enable it in Android settings; type into any app, Termux chords and Vietnamese included | 🔜 Next |
 | **v0.3** Ubuntu desktop keyboard | Type into the focused app on GNOME (Wayland and X11) without taking focus | 🗺️ Planned |
 | **v0.4** Power features | Snippets, auto-pairs, macros, per-app profiles, a visual layout editor | 🗺️ Planned |
-| **v0.5** Better Vietnamese | Shorthand, English auto-restore, per-app VI / EN, VIQR, a Vietnamese UI | 🗺️ Planned |
+| **v0.5** Better Vietnamese | Shorthand, English auto-restore, per-app VI / EN, a Vietnamese UI | 🗺️ Planned |
 | **v1.0** Ready for everyone | Signed packages in the usual stores, stable formats, accessibility and security reviews | 🗺️ Planned |
 
 The [full roadmap](docs/ROADMAP.md) has every item, the principles each one has to keep,
@@ -429,7 +429,7 @@ Super Keyboard is early, so there is room to shape it, and it is looking for col
 |---|---|
 | 🤖 An **Android** developer (Kotlin, `InputMethodService`, JNI) | [Host the Dioxus UI inside an InputMethodService](https://github.com/tristanseltec/super-keyboard/issues/10) |
 | 🐧 A **Linux desktop** developer (Wayland, GNOME, IBus, uinput) | [A keyboard window that never takes focus](https://github.com/tristanseltec/super-keyboard/issues/13), then the [IBus sink](https://github.com/tristanseltec/super-keyboard/issues/25) |
-| 🇻🇳 A **Vietnamese** typist or input-method developer | Try the Telex and VNI rules on your own writing and [report a word that types wrong](https://github.com/tristanseltec/super-keyboard/issues/new); [VIQR](https://github.com/tristanseltec/super-keyboard/issues/37) is a good first issue, and [shorthand](https://github.com/tristanseltec/super-keyboard/issues/34) is next |
+| 🇻🇳 A **Vietnamese** typist or input-method developer | Try the Telex, VNI and VIQR rules on your own writing and [report a word that types wrong](https://github.com/tristanseltec/super-keyboard/issues/new); [a Vietnamese letters section](https://github.com/tristanseltec/super-keyboard/issues/39) is a good first issue, and [shorthand](https://github.com/tristanseltec/super-keyboard/issues/34) is next |
 | 🦀 A **Rust or Dioxus** developer | [Good first issues](https://github.com/tristanseltec/super-keyboard/labels/good%20first%20issue) such as [auto-pair brackets](https://github.com/tristanseltec/super-keyboard/issues/17) |
 | ⌨️ A **keyboard and layout** nerd | Share a layout or a theme in [Discussions](https://github.com/tristanseltec/super-keyboard/discussions) |
 | 🎨 A **designer** | The [brand kit](docs/BRAND.md) is open: icons for Android, a docs site, a theme gallery |

@@ -121,6 +121,9 @@ pub(super) struct Word {
     /// the syllable. If a later letter makes it impossible in Vietnamese, it
     /// goes back to the keys as typed: `don't`, `ma.com`, `m[k]`.
     marked_by_punctuation: bool,
+    /// `keys` no longer spell what is shown (after Backspace, an undone key
+    /// or `[[`), so putting the word back would lose or repeat letters.
+    keys_stale: bool,
     /// VIQR: the key that changed the tone with the last key, and the tone
     /// before it, so the same key at once takes it back (`ba.n??` is `bạn?`).
     tone_by: Option<(char, Tone)>,
@@ -164,8 +167,7 @@ impl Word {
         }
         self.frozen = false;
         // The keys no longer match the letters: nothing to put back any more.
-        self.keys.clear();
-        self.marked_by_punctuation = false;
+        self.keys_stale = true;
         self.tone_by = None;
         self.escaped = false;
         self.drop_stray_tone();
@@ -189,13 +191,18 @@ impl Word {
     pub fn push_key(&mut self, key: char, options: &VietnameseOptions) -> bool {
         // Only the very next key can take back a VIQR tone.
         let tone_by = self.tone_by.take();
-        if std::mem::take(&mut self.escaped) && (key == '\\' || Effect::of(options, key).is_some())
-        {
-            // `\?` is `?`: the key takes the place of the `\` shown.
-            if self.letters.last().is_some_and(|l| l.base == '\\') {
-                self.letters.pop();
+        if std::mem::take(&mut self.escaped) {
+            // `\?` is `?`, in place of the `\` shown: a punctuation mark key
+            // after a syllable it could mark. `C:\dev`, `\(x\)` and `x\+y`
+            // keep their backslash.
+            let mut without = self.clone();
+            without.letters.pop();
+            without.keys.pop();
+            let mark_key = !key.is_ascii_alphanumeric() && Effect::of(options, key).is_some();
+            if key == '\\' || (mark_key && without.vowels().is_some()) {
+                *self = without;
+                return self.push_literal(key);
             }
-            return self.push_literal(key);
         }
         if !self.frozen
             && let Some(effect) = Effect::of(options, key)
@@ -213,10 +220,16 @@ impl Word {
                     self.keys.push(key);
                     return true;
                 }
-                Outcome::Undone | Outcome::Literal => return self.push_literal(key),
+                Outcome::Literal => return self.push_literal(key),
+                Outcome::Undone => {
+                    // Two keys, one shown: `ba''` is `ba'`.
+                    self.keys_stale = true;
+                    return self.push_literal(key);
+                }
                 Outcome::Reverted => {
                     self.frozen = true;
                     self.keys.push(key);
+                    self.keys_stale = true;
                     self.drop_stray_tone();
                     return true;
                 }
@@ -234,7 +247,11 @@ impl Word {
         }
         self.letters.push(Letter::typed(key));
         self.keys.push(key);
-        if options.check_spelling && self.marked_by_punctuation && !self.is_valid() {
+        if options.check_spelling
+            && self.marked_by_punctuation
+            && !self.keys_stale
+            && !self.is_valid()
+        {
             // Not Vietnamese after all (`don't`, `ma.com`): back to the keys.
             self.letters = self.keys.iter().map(|&k| Letter::typed(k)).collect();
             self.tone = Tone::Level;

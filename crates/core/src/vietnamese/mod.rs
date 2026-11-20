@@ -723,6 +723,70 @@ mod tests {
         assert_eq!(type_then(telex(), "nhwfw", "a"), "nha");
     }
 
+    /// Types `keys`, where `<` is Backspace, and returns the syllable.
+    fn compose(options: VietnameseOptions, keys: &str) -> String {
+        let mut composer = Composer::new(VietnameseOptions {
+            enabled: true,
+            ..options
+        });
+        for key in keys.chars() {
+            if key == '<' {
+                composer.backspace();
+            } else {
+                composer.push_key(key);
+            }
+        }
+        composer.composing()
+    }
+
+    #[test]
+    fn putting_back_never_loses_what_came_before_a_backspace() {
+        // After a Backspace the word is not put back as typed, so nothing
+        // typed earlier can be lost.
+        assert_eq!(compose(viqr(), "ban<'x"), "báx");
+        assert_eq!(compose(viqr(), "cann<'t"), "cánt");
+        assert_eq!(compose(viqr(), "dx<on't"), "dónt");
+        let brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..telex()
+        };
+        assert_eq!(compose(brackets, "mx<[k"), "mơk");
+        assert_eq!(compose(brackets, "th<h[k"), "thơk");
+    }
+
+    #[test]
+    fn putting_back_does_not_repeat_an_undone_key() {
+        check(viqr(), &[("ba''x", "ba'x"), ("ba.n??x", "bạn?x")]);
+        let brackets = VietnameseOptions {
+            telex_brackets: true,
+            ..telex()
+        };
+        // `[[` is a bracket; the `]` after a bracket word types as written.
+        check(brackets, &[("m[[k", "m[k"), ("t[[i]", "t[i]")]);
+    }
+
+    #[test]
+    fn a_backslash_only_escapes_a_mark_that_would_apply() {
+        check(
+            viqr(),
+            &[
+                ("C:\\dev", "C:\\dev"),
+                ("C:\\Users\\dan", "C:\\Users\\dan"),
+                ("\\(x\\)", "\\(x\\)"),
+                ("x\\+y", "x\\+y"),
+                ("\\0", "\\0"),
+                ("a\\.b", "a.b"),
+            ],
+        );
+        // A Backspace over the backslash cancels it.
+        assert_eq!(compose(viqr(), "a\\<?"), "ả");
+    }
+
+    #[test]
+    fn a_reverted_lone_w_takes_its_tone_with_it() {
+        check(telex(), &[("nhwfwa", "nhwa")]);
+    }
+
     #[test]
     fn telex_and_vni_leave_viqr_punctuation_alone() {
         check(telex(), &[("a'", "a'"), ("a.", "a."), ("o+", "o+")]);

@@ -139,7 +139,6 @@ impl KeyHandler {
     }
 }
 
-/// The ASCII character a keysym types, if any.
 /// The VIQR mark a dead key stands for.
 fn viqr_dead_key(keyval: u32) -> Option<char> {
     Some(match keyval {
@@ -155,6 +154,7 @@ fn viqr_dead_key(keyval: u32) -> Option<char> {
     })
 }
 
+/// The ASCII character a keysym types, if any.
 fn printable(keyval: u32) -> Option<char> {
     (0x20..=0x7e)
         .contains(&keyval)
@@ -326,6 +326,32 @@ mod tests {
             ..VietnameseOptions::default()
         });
         assert_eq!(telex.key(keysym::DEAD_ACUTE, 0), Response::default());
+    }
+
+    #[test]
+    fn every_dead_key_types_its_viqr_mark() {
+        let marks = [
+            (keysym::DEAD_ACUTE, '\'', "á"),
+            (keysym::DEAD_GRAVE, '`', "à"),
+            (keysym::DEAD_HOOK, '?', "ả"),
+            (keysym::DEAD_TILDE, '~', "ã"),
+            (keysym::DEAD_BELOWDOT, '.', "ạ"),
+            (keysym::DEAD_CIRCUMFLEX, '^', "â"),
+            (keysym::DEAD_BREVE, '(', "ă"),
+        ];
+        for (keyval, mark, made) in marks {
+            assert_eq!(viqr_dead_key(keyval), Some(mark));
+            let mut h = KeyHandler::new(VietnameseOptions {
+                enabled: true,
+                method: InputMethod::Viqr,
+                ..VietnameseOptions::default()
+            });
+            type_keys(&mut h, "a");
+            assert!(h.key(keyval, 0).handled, "{mark}");
+            assert_eq!(h.preedit(), made, "{mark}");
+        }
+        assert_eq!(viqr_dead_key(keysym::DEAD_HORN), Some('+'));
+        assert_eq!(viqr_dead_key(keysym::BACKSPACE), None);
     }
 
     #[test]
